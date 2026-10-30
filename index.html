@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Prep">
+<meta name="robots" content="noindex,nofollow">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Field Notes</title>
+<style>
+:root{--bg:#f5f4f0;--card:#fff;--ink:#16191c;--muted:#5f666c;--line:#e2dfd8;--acc:#8a3b12}
+@media (prefers-color-scheme:dark){:root{--bg:#121518;--card:#1b1f23;--ink:#ebe8e2;--muted:#a1a7ad;--line:#2c3237;--acc:#e0885a}}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:17px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
+#lock{min-height:100%;display:grid;place-items:center;padding:24px 16px}
+.box{width:100%;max-width:360px;background:var(--card);border:1px solid var(--line);border-radius:18px;padding:22px}
+h1{margin:0 0 4px;font:700 26px/1.2 ui-serif,Georgia,serif}
+.sub{color:var(--muted);font-size:14px;margin:0 0 16px}
+input[type=password]{width:100%;font:inherit;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+label.rem{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--muted);margin:12px 0}
+button.go{width:100%;font:inherit;font-weight:600;padding:12px;border:0;border-radius:12px;background:var(--acc);color:#fff}
+.err{color:#c0392b;font-size:14px;min-height:1.2em;margin-top:8px}
+#app{display:none;height:100%;flex-direction:column}
+#bar{display:flex;align-items:center;gap:8px;padding:calc(env(safe-area-inset-top) + 6px) 10px 6px;background:var(--card);border-bottom:1px solid var(--line)}
+#bar button{font:inherit;font-size:15px;background:none;border:1px solid var(--line);color:var(--ink);border-radius:10px;padding:5px 10px}
+#title{flex:1;font-weight:600;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#stamp{font-size:11px;color:var(--muted)}
+iframe{flex:1;width:100%;border:0;background:var(--bg)}
+#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 16px);transform:translateX(-50%);background:#222;color:#fff;font-size:14px;padding:9px 14px;border-radius:12px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%}
+#toast.on{opacity:.95}
+</style>
+</head>
+<body>
+<div id="lock">
+  <form class="box" id="form">
+    <h1>Field Notes</h1>
+    <p class="sub">Works offline once unlocked.</p>
+    <input type="password" id="pw" placeholder="Password" autocomplete="current-password" autofocus>
+    <label class="rem"><input type="checkbox" id="rem" checked> Stay unlocked on this phone</label>
+    <button class="go" type="submit">Unlock</button>
+    <div class="err" id="err"></div>
+  </form>
+</div>
+<div id="app">
+  <div id="bar"><button id="home">Home</button><button id="back">‹</button><span id="title"></span><span id="stamp"></span></div>
+  <iframe id="view" title="Page"></iframe>
+</div>
+<div id="toast"></div>
+<script>
+(function(){
+  var KEYSTORE='prep.key.v1', pages=null, stack=[], meta=null, liveKey=null, current='home';
+  function b64(buf){return btoa(String.fromCharCode.apply(null,new Uint8Array(buf)));}
+  function unb64(s){var b=atob(s),a=new Uint8Array(b.length);for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return a;}
+  function toast(t){var el=document.getElementById('toast');el.textContent=t;el.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(function(){el.classList.remove('on');},2600);}
+  function get(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+  function put(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v);}catch(e){}}
+
+  async function fetchData(){
+    var r1=await fetch('version.json',{cache:'no-cache'}); meta=await r1.json();
+    var r2=await fetch('data.bin?v='+meta.version); return new Uint8Array(await r2.arrayBuffer());
+  }
+  async function keyFromPassword(pw){
+    var base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
+    return crypto.subtle.deriveKey({name:'PBKDF2',salt:unb64(meta.salt),iterations:meta.iter,hash:'SHA-256'},base,{name:'AES-GCM',length:256},true,['decrypt']);
+  }
+  async function decrypt(key,data){
+    var iv=data.slice(0,12), body=data.slice(12);
+    var plain=await crypto.subtle.decrypt({name:'AES-GCM',iv:iv},key,body);
+    return JSON.parse(new TextDecoder().decode(plain));
+  }
+  async function unlockWith(key,data,remember){
+    var bundle=await decrypt(key,data);
+    pages=bundle.pages; liveKey=key;
+    if(remember){ put(KEYSTORE, JSON.stringify({salt:meta.salt,k:b64(await crypto.subtle.exportKey('raw',key))})); }
+    document.getElementById('lock').style.display='none';
+    document.getElementById('app').style.display='flex';
+    document.getElementById('stamp').textContent='Updated '+bundle.built;
+    var start=(location.hash||'').slice(1); show(pages[start]?start:'home');
+  }
+  function show(name,hash,noPush){
+    var p=pages[name]; if(!p){toast('That page is not in the phone app.');return;}
+    if(!noPush && stack[stack.length-1]!==name) stack.push(name);
+    current=name;
+    document.getElementById('title').textContent=p.title;
+    var f=document.getElementById('view');
+    f.onload=function(){ if(hash){ var d=f.contentDocument, t=d&&d.getElementById(hash); if(t){ for(var n=t;n;n=n.parentElement){ if(n.tagName==='DETAILS') n.open=true; } t.scrollIntoView(); } } };
+    f.srcdoc=p.html;
+    history.replaceState(null,'','#'+name);
+  }
+  window.addEventListener('message',function(e){
+    var m=e.data||{};
+    if(m.go) show(m.go,m.hash);
+    else if(m.ext){ if(/^tel:|^sms:|^mailto:/.test(m.ext)) location.href=m.ext; else window.open(m.ext,'_blank'); }
+    else if(m.missing) toast('That file is on the Mac and the ES_BACKUP drive, not in the phone app.');
+  });
+  // When the app comes back to the foreground, pick up any newer version quietly.
+  document.addEventListener('visibilitychange',async function(){
+    if(document.visibilityState!=='visible'||!liveKey) return;
+    try{ var r=await fetch('version.json',{cache:'no-store'}); var m=await r.json(); if(!meta||m.version===meta.version) return;
+      if(m.salt!==meta.salt){ put(KEYSTORE,null); location.reload(); return; }
+      meta=m; var d=new Uint8Array(await (await fetch('data.bin?v='+m.version)).arrayBuffer()); var b=await decrypt(liveKey,d);
+      pages=b.pages; document.getElementById('stamp').textContent='Updated '+b.built; show(pages[current]?current:'home',null,true); toast('Updated to the latest version.');
+    }catch(e){}
+  });
+  document.getElementById('home').onclick=function(){stack=[];show('home');};
+  document.getElementById('back').onclick=function(){ if(stack.length>1){stack.pop(); show(stack[stack.length-1],null,true);} };
+
+  document.getElementById('form').addEventListener('submit',async function(e){
+    e.preventDefault(); var err=document.getElementById('err'); err.textContent='Unlocking…';
+    try{ var data=await fetchData(); var key=await keyFromPassword(document.getElementById('pw').value);
+      await unlockWith(key,data,document.getElementById('rem').checked); err.textContent=''; }
+    catch(x){ err.textContent = (x && x.name==='OperationError') ? 'Wrong password.' : 'Could not load the app. If you are offline, open it once with internet first.'; }
+  });
+
+  (async function(){
+    if('serviceWorker' in navigator){ try{ navigator.serviceWorker.register('sw.js'); }catch(e){} }
+    var saved=get(KEYSTORE); if(!saved) return;
+    try{ var s=JSON.parse(saved); var data=await fetchData();
+      if(s.salt!==meta.salt) throw new Error('password changed');
+      var key=await crypto.subtle.importKey('raw',unb64(s.k),{name:'AES-GCM'},true,['decrypt']);
+      await unlockWith(key,data,false);
+    }catch(e){ put(KEYSTORE,null); }
+  })();
+})();
+</script>
+</body>
+</html>
