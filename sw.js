@@ -1,5 +1,5 @@
 // Offline support: try the network first (so updates arrive), fall back to the saved copy.
-const CACHE = 'prep-v1';  // offline copy of the app
+const CACHE = 'prep-v2';  // offline copy of the app
 const FILES = ['./', 'index.html', 'version.json', 'data.bin', 'manifest.webmanifest', 'icon-180.png', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', e => {
