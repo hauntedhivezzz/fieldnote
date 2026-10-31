@@ -59,6 +59,7 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
 #tabs button.sos{color:var(--sos)}
 /* Sheets (Contents, Search, Emergency, Offline) slide up over a dimmed screen. */
 #scrim{position:fixed;inset:0;z-index:19;background:rgba(0,0,0,.38)}
+#sheet[hidden],#scrim[hidden]{display:none}
 #sheet{position:fixed;left:0;right:0;bottom:0;z-index:20;max-height:86%;display:flex;flex-direction:column;background:var(--card);border-top:1px solid var(--line);border-radius:18px 18px 0 0;padding:8px 0 env(safe-area-inset-bottom);box-shadow:0 -8px 30px rgba(0,0,0,.25);font-size:16px}
 #sheet.tall{height:92%;max-height:92%}
 #sheet .grab{width:38px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 6px;flex:none}
@@ -292,7 +293,9 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
   function allGuides(){ return ORDER.map(function(g){ var r=g[1].filter(function(k){return pages[k];}).map(function(k){ return row(k,pages[k].title,'',false); }).join('');
     return r?'<div class="grp">'+g[0]+'</div><div class="list">'+r+'</div>':''; }).join(''); }
   function contents(){ var en=stack[stack.length-1];
-    if(en.n==='home'){ openSheet('All guides',allGuides()); return; }
+    if(en.n==='home'){ var r=ready||{};
+      openSheet('All guides',allGuides()+'<div class="grp">This phone</div><div class="list"><button type="button" class="row" id="offRow"><span class="tx">'+(r.ok?'✓ Ready offline':'⚠︎ Not fully offline yet')+'<small>'+esc(built||'')+'. Tap for details.</small></span><span class="go">'+CH+'</span></button></div>');
+      document.getElementById('offRow').onclick=function(){ closeSheet(); offlineSheet(); }; return; }
     var I=info(en.n), p=pages[en.n], list=(I.secs.length?I.secs:I.heads)||[], body='';
     if(!list.length) body='<p class="note">This page has no sections.</p>';
     else if(split(en.n)){ var by={},used={}; list.forEach(function(s){by[s.id]=s;});
@@ -337,10 +340,9 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
     try{ var c=await caches.open('prep-v2'); var a=await c.match('index.html'), b=await c.match('data.bin',{ignoreSearch:true}); r.files=!!(a&&b); }catch(e){}
     r.ok=r.sw&&r.files&&r.pages; ready=r; stampChip(); return r;
   }
-  // Home only: a small offline status chip where Back would be. Tap for details.
+  // Home only, and only when something's wrong: "Offline?" chip where Back would be. When all is well, the status is in Contents on Home.
   function stampChip(){ var s=document.getElementById('stamp'), en=stack[stack.length-1];
-    s.hidden = !en||en.n!=='home'; if(s.hidden) return;
-    if(!ready){ s.textContent='…'; s.className=''; s.setAttribute('aria-label','Checking offline'); return; }
+    s.hidden = !en||en.n!=='home'||!ready||ready.ok; if(s.hidden) return;
     s.textContent= ready.ok ? '✓ Offline' : '⚠︎ Offline?'; s.className= ready.ok ? 'ok' : 'warn';
     s.setAttribute('aria-label', (ready.ok?'Ready offline':'Not fully offline yet')+'. Show details'); }
   function offlineSheet(){ var r=ready||{};
