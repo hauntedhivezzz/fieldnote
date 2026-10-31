@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="color-scheme" content="light dark">
-<meta name="apple-mobile-web-app-title" content="Prep">
+<meta name="apple-mobile-web-app-title" content="Field Notes">
 <meta name="robots" content="noindex,nofollow">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icon-180.png">
@@ -34,7 +34,15 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
 #bar button[hidden]{display:none}
 #mid{flex:1;min-width:0;text-align:center;line-height:1.15}
 #title{display:block;font-weight:650;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#stamp{display:block;font-size:12px;color:var(--muted)}
+#stamp{display:block;font-size:12px;color:var(--muted);background:none;border:0;padding:0;margin:0 auto;font:inherit;font-size:12px;line-height:1.3}
+#stamp.ok{color:#2e6b34} #stamp.warn{color:#8a5a00}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #stamp.ok{color:#8fd19a} :root:not([data-theme="light"]) #stamp.warn{color:#f2c46b}}
+:root[data-theme="dark"] #stamp.ok{color:#8fd19a} :root[data-theme="dark"] #stamp.warn{color:#f2c46b}
+button#stamp{min-height:24px;cursor:pointer;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
+button#stamp:disabled{text-decoration:none;cursor:default;color:var(--muted);opacity:1}
+#sheet{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--card);border-top:1px solid var(--line);border-radius:18px 18px 0 0;padding:18px 18px calc(env(safe-area-inset-bottom) + 18px);box-shadow:0 -8px 30px rgba(0,0,0,.25);font-size:15px}
+#sheet h2{margin:0 0 8px;font-size:18px} #sheet ul{margin:6px 0 12px;padding-left:20px} #sheet li{margin:4px 0}
+#sheet button{width:100%;min-height:48px;border:0;border-radius:14px;background:var(--acc);color:#fff;font:inherit;font-weight:600}
 #themeBtn{position:relative}
 iframe{flex:1;width:100%;border:0;background:var(--bg)}
 #toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 18px);transform:translateX(-50%);background:#222;color:#fff;font-size:15px;padding:10px 16px;border-radius:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%}
@@ -53,10 +61,11 @@ iframe{flex:1;width:100%;border:0;background:var(--bg)}
   </form>
 </div>
 <div id="app">
-  <div id="bar"><button id="back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><button id="home" aria-label="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg></button><div id="mid"><span id="title"></span><span id="stamp"></span></div><button id="themeBtn" aria-label="Light or dark"></button></div>
+  <div id="bar"><button id="back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><button id="home" aria-label="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg></button><div id="mid"><span id="title"></span><button type="button" id="stamp"></button></div><button id="themeBtn" aria-label="Light or dark"></button></div>
   <iframe id="view" title="Page"></iframe>
 </div>
 <div id="toast"></div>
+<div id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetH" hidden></div>
 <script>
 (function(){
   var KEYSTORE='prep.key.v1', pages=null, stack=[], meta=null, liveKey=null, current='home';
@@ -100,7 +109,7 @@ iframe{flex:1;width:100%;border:0;background:var(--bg)}
     if(remember){ put(KEYSTORE, JSON.stringify({salt:meta.salt,k:b64(await crypto.subtle.exportKey('raw',key))})); }
     document.getElementById('lock').style.display='none';
     document.getElementById('app').style.display='flex';
-    document.getElementById('stamp').textContent='Updated '+bundle.built;
+    built=bundle.built; checkOffline(); if(navigator.serviceWorker&&navigator.serviceWorker.ready) navigator.serviceWorker.ready.then(function(){ setTimeout(checkOffline,1500); });
     var start=(location.hash||'').slice(1); show(pages[start]?start:'home');
   }
   function frame(){ var f=document.getElementById('view'), d=null; try{ d=f.contentDocument; }catch(e){} return {f:f,d:d,w:f.contentWindow}; }
@@ -111,6 +120,29 @@ iframe{flex:1;width:100%;border:0;background:var(--bg)}
     var ds=v.d.querySelectorAll('details'); if(ds.length===s.det.length) [].forEach.call(ds,function(x,i){ x.open=s.det.charAt(i)==='1'; });
     var go=function(){ var sb=r.style.scrollBehavior; r.style.scrollBehavior='auto'; v.w.scrollTo(0,s.y); r.style.scrollBehavior=sb; };
     go(); setTimeout(go,80); setTimeout(go,300); }
+  // ---- "Ready offline": a real check that this phone can open everything with no internet.
+  var built='', ready=null;
+  async function checkOffline(){
+    var r={sw:false, files:false, pages:!!pages, n:pages?Object.keys(pages).length:0};
+    try{ r.sw=!!(navigator.serviceWorker && navigator.serviceWorker.controller); }catch(e){}
+    try{ var c=await caches.open('prep-v2'); var a=await c.match('index.html'), b=await c.match('data.bin',{ignoreSearch:true}); r.files=!!(a&&b); }catch(e){}
+    r.ok=r.sw&&r.files&&r.pages; ready=r; bar(); return r;
+  }
+  function bar(){ var s=document.getElementById('stamp');
+    if(current!=='home'){ s.textContent='Field Notes'; s.className=''; s.disabled=true; s.removeAttribute('aria-label'); return; }
+    s.disabled=false;
+    if(!ready){ s.textContent='Checking offline…'; s.className=''; return; }
+    s.textContent= ready.ok ? '✓ Ready offline' : '⚠︎ Not fully offline yet'; s.className= ready.ok ? 'ok' : 'warn';
+    s.setAttribute('aria-label', s.textContent+'. Show details'); }
+  function sheet(){ var r=ready||{}, el=document.getElementById('sheet');
+    var li=function(ok,t){ return '<li>'+(ok?'✓ ':'✗ ')+t+'</li>'; };
+    el.innerHTML='<h2 id="sheetH">'+(r.ok?'Ready offline':'Not fully offline yet')+'</h2><ul>'+
+      li(r.sw,'App saved on this phone (works in airplane mode)')+li(r.files,'Encrypted pages saved on this phone')+
+      li(r.pages,(r.n||0)+' pages unlocked'+(built?', updated '+built:''))+'</ul>'+
+      (r.ok?'':'<p>Open the app once with internet and leave it open for a few seconds, then check again.</p>')+
+      '<p style="color:var(--muted)"><b>Mac and ES_BACKUP only:</b> PDF books and manuals, the Kiwix library, movies, the full map. The PDFs you set up in Files and Kiwix on the phone are separate apps.</p>'+
+      '<button type="button" id="sheetX">Close</button>';
+    el.hidden=false; var x=document.getElementById('sheetX'); x.focus(); x.onclick=function(){ el.hidden=true; document.getElementById('stamp').focus(); }; }
   function remember(){ var top=stack[stack.length-1]; if(top&&top.n===current) top.s=snap(); }
   function busy(){ var v=frame(); return !!(v.d&&v.d.documentElement&&v.d.documentElement.dataset.busy); }
   // Light/dark: change it inside the open page, so nothing reloads and running tools (CPR beat) keep going.
@@ -120,7 +152,6 @@ iframe{flex:1;width:100%;border:0;background:var(--bg)}
     opt=opt||{}; var p=pages[name]; if(!p){toast('That page is not in the phone app.');return;}
     if(!opt.noPush){ remember(); if(!stack.length||stack[stack.length-1].n!==name) stack.push({n:name}); }
     current=name;
-    document.getElementById('title').textContent= name==='home' ? 'Field Notes' : p.title;
     var f=document.getElementById('view');
     f.onload=function(){ var d=f.contentDocument;
       if(opt.state){ restore(opt.state); }
@@ -128,6 +159,7 @@ iframe{flex:1;width:100%;border:0;background:var(--bg)}
     f.srcdoc=inject(p.html);
     document.getElementById('back').hidden = stack.length<2;
     document.getElementById('home').hidden = name==='home';
+    document.getElementById('title').textContent = name==='home' ? 'Field Notes' : p.title; bar();
     history.replaceState(null,'','#'+name);
   }
   window.addEventListener('message',function(e){
@@ -142,12 +174,14 @@ iframe{flex:1;width:100%;border:0;background:var(--bg)}
     try{ var r=await fetch('version.json',{cache:'no-store'}); var m=await r.json(); if(!meta||m.version===meta.version) return;
       if(m.salt!==meta.salt){ put(KEYSTORE,null); location.reload(); return; }
       meta=m; var d=new Uint8Array(await (await fetch('data.bin?v='+m.version)).arrayBuffer()); var b=await decrypt(liveKey,d);
-      pages=b.pages; document.getElementById('stamp').textContent='Updated '+b.built;
+      pages=b.pages; built=b.built; checkOffline();
       // Never interrupt a running tool; the update shows up on the next page you open.
       if(!busy()) show(pages[current]?current:'home',null,{noPush:true,state:snap()}); toast('Updated to the latest version.');
     }catch(e){}
   });
   document.getElementById('home').onclick=function(){stack=[];show('home');};
+  document.getElementById('stamp').onclick=function(){ if(current==='home') sheet(); };
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ var el=document.getElementById('sheet'); if(!el.hidden){ el.hidden=true; } } });
   document.getElementById('themeBtn').onclick=function(){ var n={auto:'light',light:'dark',dark:'auto'}[theme()]; setTheme(n);
     toast(n==='auto'?'Theme: matches your phone':'Theme: '+(n==='light'?'Light':'Dark')); themeFrame(); };
   document.getElementById('back').onclick=function(){ if(stack.length>1){ stack.pop(); var top=stack[stack.length-1]; show(top.n,null,{noPush:true,state:top.s}); } };
