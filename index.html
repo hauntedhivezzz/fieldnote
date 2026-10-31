@@ -155,13 +155,13 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
       "var G=(O.groups||[]).map(function(g){return[g[0],g[1].filter(function(i){return by[i]&&!used[i]&&(used[i]=1);})];});"+
       "var rest=S.filter(function(e){return!used[e.id];}).map(function(e){return e.id;});"+
       "if(rest.length){var gi=G.length&&/reference/i.test(G[G.length-1][0])?G.length-2:G.length-1;if(gi<0)G.push(['Sections',rest]);else G[gi][1]=G[gi][1].concat(rest);}"+
-      "var h=G.filter(function(g){return g[1].length;}).map(function(g,gi){return'<h3'+(gi===0&&/now/i.test(g[0])?' class=\"now\"':'')+'>'+esc(g[0])+'</h3><div class=\"fngrp\">'+g[1].map(function(id){var e=by[id],d=e.querySelector('summary .dot');"+
+      "var h=G.filter(function(g){return g[1].length&&g[0]!=='_skip';}).map(function(g,gi){return'<h3'+(gi===0&&/now/i.test(g[0])?' class=\"now\"':'')+'>'+esc(g[0])+'</h3><div class=\"fngrp\">'+g[1].map(function(id){var e=by[id],d=e.querySelector('summary .dot');"+
         "return'<button type=\"button\" class=\"fnrow\" data-sec=\"'+id+'\">'+(d?d.outerHTML:'')+'<span class=\"tx\"><b>'+esc(ttl(e))+'</b>'+(key(e)?'<small>'+esc(key(e))+'</small>':'')+'</span><span class=\"go\">'+CH+'</span></button>';}).join('')+'</div>';}).join('');"+
-      "var nv=document.createElement('nav');nv.className='fnlist';nv.setAttribute('aria-label','Sections');nv.innerHTML=h;M.insertBefore(nv,S[0]);"+
+      "var nv=document.createElement('nav');nv.className='fnlist';nv.setAttribute('aria-label','Sections');nv.innerHTML=h;M.insertBefore(nv,S[0]);[].forEach.call(M.querySelectorAll(':scope > a'),function(a){M.insertBefore(a,nv);});"+
       "nv.addEventListener('click',function(ev){var b=ev.target.closest('.fnrow');if(b)post({fnSec:b.getAttribute('data-sec')});});}"+
     "else if(O.mode==='sec'){R.classList.add('fn-sec');var e=document.getElementById(O.sec);if(e){e.classList.add('fn-on');if(e.tagName==='DETAILS')e.open=true;"+
       "var t=ttl(e);if(t&&t.toLowerCase()!==sh(e).toLowerCase()){var hh=document.createElement('h2');hh.className='fnh';hh.textContent=t;M.insertBefore(hh,e);}"+
-      "var nx=S.filter(function(x){return!/^(sources|more)$/.test(x.id);}),i=nx.indexOf(e),n=i>=0?nx[i+1]:null;"+
+      "var skip={};(O.groups||[]).forEach(function(g){if(g[0]==='_skip')g[1].forEach(function(i){skip[i]=1;});});var nx=S.filter(function(x){return!/^(sources|more)$/.test(x.id)&&!skip[x.id];}),i=nx.indexOf(e),n=i>=0?nx[i+1]:null;"+
       "if(n){var a=document.createElement('button');a.type='button';a.className='fnnext';a.innerHTML='<span><small>Next</small>'+esc(ttl(n))+'</span>'+CH;a.onclick=function(){post({fnSec:n.id,replace:1});};e.after(a);}"+
       "if(O.h&&O.h!==O.sec)openTo(O.h);}"+
       // A link to another section of this guide opens that section's screen.
@@ -295,7 +295,7 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
     else if(split(en.n)){ var by={},used={}; list.forEach(function(s){by[s.id]=s;});
       var G=((p.nav&&p.nav.groups)||[]).map(function(g){ return [g[0],g[1].filter(function(i){ return by[i]&&!used[i]&&(used[i]=1); })]; });
       var rest=list.filter(function(s){return !used[s.id];}).map(function(s){return s.id;}); if(rest.length) G.push(['More',rest]);
-      body=G.filter(function(g){return g[1].length;}).map(function(g){ return '<div class="grp">'+esc(g[0])+'</div><div class="list">'+g[1].map(function(id){ var s=by[id]; return row(en.n+'#'+id,s.t,s.k,en.sec===id,true); }).join('')+'</div>'; }).join('');
+      body=G.filter(function(g){return g[1].length&&g[0]!=='_skip';}).map(function(g){ return '<div class="grp">'+esc(g[0])+'</div><div class="list">'+g[1].map(function(id){ var s=by[id]; return row(en.n+'#'+id,s.t,s.k,en.sec===id,true); }).join('')+'</div>'; }).join('');
     } else body='<div class="list">'+list.map(function(s){ return row(en.n+'#'+s.id,s.t,s.k,false); }).join('')+'</div>';
     body+='<div class="grp">Other guides</div><div class="list">'+row('home','All guides','Back to the home screen',false)+'</div>';
     openSheet(p.title,body); }
