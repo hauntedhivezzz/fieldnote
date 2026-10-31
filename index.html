@@ -28,14 +28,19 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
 .err{color:#c0392b;font-size:14px;min-height:1.2em;margin-top:10px}
 #app{display:none;height:100%;flex-direction:column}
 /* One row: back + home on the left, title centered, theme on the right. Side columns are equal so the title is truly centered. */
-#bar{display:grid;grid-template-columns:96px minmax(0,1fr) 96px;align-items:center;min-height:52px;padding:env(safe-area-inset-top) 6px 0;background:var(--card);border-bottom:1px solid var(--line)}
-#left,#right{display:flex;align-items:center;height:48px}
+#bar{display:grid;grid-template-columns:96px minmax(0,1fr) 96px;align-items:center;min-height:60px;padding:env(safe-area-inset-top) 6px 0;background:var(--card);border-bottom:1px solid var(--line)}
+#left,#right{display:flex;align-items:center;height:56px}
+/* Inner pages: the bar takes the page's color and is its only title. */
+#bar.tinted{background:linear-gradient(135deg,var(--pa),color-mix(in srgb,var(--pa) 72%,#000));border-bottom:0;color:#fff}
+#bar.tinted button{color:#fff}
+#bar.tinted button:active{background:rgba(255,255,255,.18)}
+#bar.tinted #title{color:#fff}
 #right{justify-content:flex-end}
 #bar button{flex:none;width:44px;height:44px;display:grid;place-items:center;background:none;border:0;border-radius:12px;color:var(--ink);padding:0}
 #bar button:active{background:var(--press)}
 #bar button svg{width:26px;height:26px;display:block}
 #bar button[hidden]{display:none}
-#title{margin:0;text-align:center;font-weight:650;font-size:17px;line-height:48px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#title{margin:0;text-align:center;font-weight:700;font-size:19px;letter-spacing:-.01em;line-height:56px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #bar button#stamp{width:auto;height:36px;padding:0 10px;border-radius:999px;border:1px solid var(--line);font:inherit;font-size:13px;font-weight:600;white-space:nowrap;color:var(--muted)}
 #bar #stamp.ok{color:#2e6b34} #bar #stamp.warn{color:#8a5a00}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #bar #stamp.ok{color:#8fd19a} :root:not([data-theme="light"]) #bar #stamp.warn{color:#f2c46b}}
@@ -81,7 +86,7 @@ iframe{flex:1;width:100%;border:0;background:var(--bg)}
     document.getElementById('themeBtn').innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+TI[t]+'</svg>';
   }
   var HEAD="<script>try{var t=JSON.parse(localStorage.getItem('ft.theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}<\/script>"+
-    "<style>.toprow,.printbar,#themeBtn{display:none!important}.top{padding-top:16px!important}<\/style>";
+    "<style>.toprow,.printbar,#themeBtn,header.top{display:none!important}body>.wrap>header .eyebrow,body>.wrap>header h1{display:none}<\/style>";
   function inject(html){ return /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, function(m){return m+HEAD;}) : HEAD+html; }
   setTheme(theme());
   function b64(buf){return btoa(String.fromCharCode.apply(null,new Uint8Array(buf)));}
@@ -160,7 +165,9 @@ iframe{flex:1;width:100%;border:0;background:var(--bg)}
       else if(hash){ var t=d&&d.getElementById(hash); if(t){ for(var n=t;n;n=n.parentElement){ if(n.tagName==='DETAILS') n.open=true; } t.scrollIntoView(); } } };
     f.srcdoc=inject(p.html);
     document.getElementById('back').hidden = stack.length<2;
-    document.getElementById('home').hidden = name==='home';
+    // Back is the main control. Home shows up once you're two or more pages in (pages link to each other).
+    document.getElementById('home').hidden = stack.length<3;
+    var bar=document.getElementById('bar'); if(name!=='home'&&p.accent){ bar.classList.add('tinted'); bar.style.setProperty('--pa',p.accent); } else bar.classList.remove('tinted');
     document.getElementById('title').textContent = name==='home' ? 'Field Notes' : p.title; bar();
     history.replaceState(null,'','#'+name);
   }
