@@ -112,7 +112,7 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
 <div id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetH" hidden></div>
 <script>
 (function(){
-  var KEYSTORE='prep.key.v1', pages=null, stack=[], meta=null, liveKey=null, cur=null, built='', ready=null;
+  var KEYSTORE='prep.key.v1', pages=null, imgs={}, stack=[], meta=null, liveKey=null, cur=null, built='', ready=null;
   // stack: [{n: page, sec: section id or none, h: spot to scroll to, s: saved scroll/open sections}]. Back walks it.
   var TI={auto:'<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17A8.5 8.5 0 0 0 12 3.5z" fill="currentColor"/>',
     light:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/>',
@@ -169,7 +169,9 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
       "window.addEventListener('click',function(ev){var a=ev.target.closest&&ev.target.closest('a[href^=\"#\"]');if(!a)return;var id=a.getAttribute('href').slice(1),t=document.getElementById(id);if(!t)return;var on=document.querySelector('.fn-on');if(on&&on.contains(t))return;ev.preventDefault();ev.stopImmediatePropagation();post({go:O.page,hash:id});},true);}"+
     "else if(O.h){openTo(O.h);}"+
     "});"+
-    "window.addEventListener('message',function(ev){var d=ev.data||{};if(d.fnJump)openTo(d.fnJump);});"+
+    "window.addEventListener('message',function(ev){var d=ev.data||{};if(d.fnJump)openTo(d.fnJump);if(d.fnImgs)[].forEach.call(document.querySelectorAll('img[data-pimg]:not([src])'),function(im){var u=d.fnImgs[im.getAttribute('data-pimg')];if(u)im.src=u;});});"+
+    // Photo rows load their pictures from the app only when opened.
+    "document.addEventListener('toggle',function(ev){var t=ev.target;if(!t.classList||!t.classList.contains('pics')||!t.open)return;var n=[].map.call(t.querySelectorAll('img[data-pimg]:not([src])'),function(i){return i.getAttribute('data-pimg');});if(n.length)post({fnImg:n});},true);"+
     // Swipe in from the left edge = Back.
     "var sx=null,sy=0;document.addEventListener('touchstart',function(e){var t=e.touches[0];sx=t.clientX<26?t.clientX:null;sy=t.clientY;},{passive:true});"+
     "document.addEventListener('touchend',function(e){if(sx==null)return;var t=e.changedTouches[0];if(t.clientX-sx>70&&Math.abs(t.clientY-sy)<70)post({fnBack:1});sx=null;},{passive:true});"+
@@ -198,7 +200,7 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
   }
   async function unlockWith(key,data,remember){
     var bundle=await decrypt(key,data);
-    pages=bundle.pages; liveKey=key; parsed={};
+    pages=bundle.pages; imgs=bundle.imgs||{}; liveKey=key; parsed={};
     if(remember){ put(KEYSTORE, JSON.stringify({salt:meta.salt,k:b64(await crypto.subtle.exportKey('raw',key))})); }
     document.getElementById('lock').style.display='none';
     document.getElementById('app').style.display='flex';
@@ -260,7 +262,9 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
   }
   function remember(){ var top=stack[stack.length-1]; if(top) top.s=snap(); }
   // Go to a page (and a spot in it). On a split guide, a spot opens the section screen that holds it.
-  function go(name,hash,opt){ opt=opt||{}; if(!pages[name]){ toast('That page is not in the phone app.'); return; }
+  var PICS={cpr:'medical',aed:'medical',choking:'medical',bleeding:'medical',recovery:'medical',earthquake:'earthquake',smoke:'smoke',generator:'power',toilet:'sanitation'};
+  function go(name,hash,opt){ opt=opt||{}; if(name==='pictures'){ var k=PICS[hash]?hash:'cpr'; name=PICS[k]; hash='pic-'+k; }
+    if(!pages[name]){ toast('That page is not in the phone app.'); return; }
     if(name==='home'){ goHome(); return; }
     var top=stack[stack.length-1], en={n:name};
     if(split(name)&&hash){ en.sec=secOf(name,hash)||''; if(en.sec&&hash!==en.sec) en.h=hash; if(!en.sec) en.h=hash; } else if(hash) en.h=hash;
@@ -288,7 +292,7 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
   sheetEl.addEventListener('click',function(e){ var b=e.target.closest('[data-go]'); if(!b) return;
     var g=b.getAttribute('data-go').split('#'); closeSheet();
     if(b.hasAttribute('data-sec')){ var top=stack[stack.length-1]; go(g[0],g[1],{replace:!!top.sec}); } else go(g[0],g[1]||''); });
-  var ORDER=[['Guides',['medical','outage','pictures','earthquake','power','water','food','smoke','sanitation','radio','cece']],['My kit',['inventory','shopping','todo','supplies','fieldtools','iphone','movies']]];
+  var ORDER=[['Guides',['medical','outage','earthquake','power','water','food','smoke','sanitation','radio','cece']],['My kit',['inventory','shopping','todo','supplies','fieldtools','iphone','movies']]];
   function row(target,t,k,curOn,isSec){ return '<button type="button" class="row'+(curOn?' cur':'')+'" data-go="'+esc(target)+'"'+(isSec?' data-sec':'')+'><span class="tx">'+esc(t)+(k?'<small>'+esc(k)+'</small>':'')+'</span><span class="go">'+CH+'</span></button>'; }
   function allGuides(){ return ORDER.map(function(g){ var r=g[1].filter(function(k){return pages[k];}).map(function(k){ return row(k,pages[k].title,'',false); }).join('');
     return r?'<div class="grp">'+g[0]+'</div><div class="list">'+r+'</div>':''; }).join(''); }
@@ -305,7 +309,7 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
     } else body='<div class="list">'+list.map(function(s){ return row(en.n+'#'+s.id,s.t,s.k,false); }).join('')+'</div>';
     body+='<div class="grp">Other guides</div><div class="list">'+row('home','All guides','Back to the home screen',false)+'</div>';
     openSheet(p.title,body); }
-  var SOS=[['medical#cpr','CPR','Not breathing normally'],['medical#choke','Choking',''],['medical#bleed','Bad bleeding',''],['pictures','Picture guide','Photo steps: CPR, choking, bleeding'],
+  var SOS=[['medical#cpr','CPR','Not breathing normally'],['medical#choke','Choking',''],['medical#bleed','Bad bleeding',''],
     ['power#safety','Carbon monoxide','Alarm, headache, dizziness near a heater'],['outage#first','Power or internet out','The first 15 minutes'],['earthquake#during','Earthquake','During and the first hour'],
     ['smoke#aqi','Wildfire smoke','Air quality and what to do'],['cece#urgent','Cece emergency','Warning signs: get to a vet']];
   function sos(){ var r=SOS.filter(function(x){ return pages[x[0].split('#')[0]]; }).map(function(x){ return row(x[0],x[1],x[2],false); }).join('');
@@ -358,7 +362,8 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
 
   window.addEventListener('message',function(e){
     var m=e.data||{};
-    if(m.fnBack) back();
+    if(m.fnImg){ var o={}; (m.fnImg||[]).forEach(function(n){ if(imgs[n]) o[n]=imgs[n]; }); try{ e.source.postMessage({fnImgs:o},'*'); }catch(x){} }
+    else if(m.fnBack) back();
     else if(m.fnSec){ var top=stack[stack.length-1]; go(top.n,m.fnSec,{replace:!!m.replace}); }
     else if(m.go) go(m.go,m.hash);
     else if(m.ext){ if(/^tel:|^sms:|^mailto:/.test(m.ext)) location.href=m.ext; else window.open(m.ext,'_blank'); }
@@ -370,7 +375,7 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
     try{ var r=await fetch('version.json',{cache:'no-store'}); var m=await r.json(); if(!meta||m.version===meta.version) return;
       if(m.salt!==meta.salt){ put(KEYSTORE,null); location.reload(); return; }
       meta=m; var d=new Uint8Array(await (await fetch('data.bin?v='+m.version)).arrayBuffer()); var b=await decrypt(liveKey,d);
-      pages=b.pages; built=b.built; parsed={}; IDX=null; checkOffline();
+      pages=b.pages; imgs=b.imgs||{}; built=b.built; parsed={}; IDX=null; checkOffline();
       stack=stack.filter(function(x){ return pages[x.n]; }); if(!stack.length) stack=[{n:'home'}];
       // Never interrupt a running tool; the update shows up on the next screen you open.
       if(!busy()){ remember(); render('none'); } toast('Updated to the latest version.');
