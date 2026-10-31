@@ -12,9 +12,9 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <title>Field Notes</title>
 <style>
-:root{--bg:#f5f5f2;--card:#fff;--ink:#15191d;--muted:#5d6670;--line:#e4e1da;--acc:#2f5d7c;--press:#ecebe6;color-scheme:light}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121518;--card:#1b1f24;--ink:#ebe8e2;--muted:#a2aab2;--line:#2c3238;--acc:#7fb0d4;--press:#262b31;color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#121518;--card:#1b1f24;--ink:#ebe8e2;--muted:#a2aab2;--line:#2c3238;--acc:#7fb0d4;--press:#262b31;color-scheme:dark}
+:root{--bg:#f5f5f2;--card:#fff;--ink:#15191d;--muted:#5d6670;--line:#e4e1da;--acc:#2f5d7c;--press:#ecebe6;--sos:#b3261e;color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121518;--card:#1b1f24;--ink:#ebe8e2;--muted:#a2aab2;--line:#2c3238;--acc:#7fb0d4;--press:#262b31;--sos:#ff8a80;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121518;--card:#1b1f24;--ink:#ebe8e2;--muted:#a2aab2;--line:#2c3238;--acc:#7fb0d4;--press:#262b31;--sos:#ff8a80;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:17px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
 #lock{min-height:100%;display:grid;place-items:center;padding:24px 16px}
@@ -27,30 +27,60 @@ label.rem input{width:22px;height:22px}
 button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-radius:14px;background:var(--acc);color:#fff}
 .err{color:#c0392b;font-size:14px;min-height:1.2em;margin-top:10px}
 #app{display:none;height:100%;flex-direction:column}
-/* One row: back + home on the left, title centered, theme on the right. Side columns are equal so the title is truly centered. */
-#bar{display:grid;grid-template-columns:96px minmax(0,1fr) 96px;align-items:center;min-height:60px;padding:env(safe-area-inset-top) 6px 0;background:var(--card);border-bottom:1px solid var(--line)}
-#left,#right{display:flex;align-items:center;height:56px}
-/* Inner pages: the bar takes the page's color and is its only title. */
+/* Top bar: Back (labeled with where it goes) on the left, title in the middle (tap it to go Home), theme on the right. */
+#bar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;min-height:60px;padding:env(safe-area-inset-top) 6px 0;background:var(--card);border-bottom:1px solid var(--line);position:relative;z-index:3}
+#left,#right{display:flex;align-items:center;height:56px;min-width:0}
 #bar.tinted{background:linear-gradient(135deg,var(--pa),color-mix(in srgb,var(--pa) 72%,#000));border-bottom:0;color:#fff}
-#bar.tinted button{color:#fff}
+#bar.tinted button,#bar.tinted #title{color:#fff}
 #bar.tinted button:active{background:rgba(255,255,255,.18)}
-#bar.tinted #title{color:#fff}
 #right{justify-content:flex-end}
 #bar button{flex:none;width:44px;height:44px;display:grid;place-items:center;background:none;border:0;border-radius:12px;color:var(--ink);padding:0}
 #bar button:active{background:var(--press)}
 #bar button svg{width:26px;height:26px;display:block}
 #bar button[hidden]{display:none}
-#title{margin:0;text-align:center;font-weight:700;font-size:19px;letter-spacing:-.01em;line-height:56px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#bar button#back{width:auto;max-width:100%;display:flex;align-items:center;gap:0;padding:0 8px 0 0;font:inherit;font-size:16px}
+#back span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#title{margin:0;max-width:52vw;text-align:center;font-weight:700;font-size:19px;letter-spacing:-.01em;line-height:56px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
 #bar button#stamp{width:auto;height:36px;padding:0 10px;border-radius:999px;border:1px solid var(--line);font:inherit;font-size:13px;font-weight:600;white-space:nowrap;color:var(--muted)}
 #bar #stamp.ok{color:#2e6b34} #bar #stamp.warn{color:#8a5a00}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #bar #stamp.ok{color:#8fd19a} :root:not([data-theme="light"]) #bar #stamp.warn{color:#f2c46b}}
 :root[data-theme="dark"] #bar #stamp.ok{color:#8fd19a} :root[data-theme="dark"] #bar #stamp.warn{color:#f2c46b}
-#sheet{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--card);border-top:1px solid var(--line);border-radius:18px 18px 0 0;padding:18px 18px calc(env(safe-area-inset-bottom) + 18px);box-shadow:0 -8px 30px rgba(0,0,0,.25);font-size:15px}
-#sheet h2{margin:0 0 8px;font-size:18px} #sheet ul{margin:6px 0 12px;padding-left:0;list-style:none} #sheet li{margin:4px 0}
-#sheet button{width:100%;min-height:48px;border:0;border-radius:14px;background:var(--acc);color:#fff;font:inherit;font-weight:600}
 #themeBtn{position:relative}
-iframe{flex:1;width:100%;border:0;background:var(--bg)}
-#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 18px);transform:translateX(-50%);background:#222;color:#fff;font-size:15px;padding:10px 16px;border-radius:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%}
+/* Screens slide in from the right, like an iPhone app. Two frames: the one leaving and the one arriving. */
+#stage{position:relative;flex:1;overflow:hidden;background:var(--bg)}
+#stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:var(--bg)}
+#stage iframe.under{filter:brightness(.92)}
+/* Bottom tab bar */
+#tabs{display:grid;grid-template-columns:repeat(5,1fr);background:var(--card);border-top:1px solid var(--line);padding:2px 2px env(safe-area-inset-bottom);position:relative;z-index:3}
+#tabs button{background:none;border:0;color:var(--muted);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;min-height:54px;padding:5px 0 3px;font:600 11px/1.1 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;border-radius:10px}
+#tabs button:active{background:var(--press)}
+#tabs svg{width:25px;height:25px;display:block}
+#tabs button.on{color:var(--acc)}
+#tabs button.sos{color:var(--sos)}
+/* Sheets (Contents, Search, Emergency, Offline) slide up over a dimmed screen. */
+#scrim{position:fixed;inset:0;z-index:19;background:rgba(0,0,0,.38)}
+#sheet{position:fixed;left:0;right:0;bottom:0;z-index:20;max-height:86%;display:flex;flex-direction:column;background:var(--card);border-top:1px solid var(--line);border-radius:18px 18px 0 0;padding:8px 0 env(safe-area-inset-bottom);box-shadow:0 -8px 30px rgba(0,0,0,.25);font-size:16px}
+#sheet.tall{height:92%;max-height:92%}
+#sheet .grab{width:38px;height:5px;border-radius:3px;background:var(--line);margin:0 auto 6px;flex:none}
+#sheet .sh-head{display:flex;align-items:center;gap:10px;padding:4px 16px 10px;flex:none}
+#sheet .sh-head h2{flex:1;margin:0;font-size:19px}
+#sheet .sh-x{background:none;border:0;color:var(--acc);font:inherit;font-weight:600;min-height:44px;padding:0 4px}
+#sheet .sh-body{overflow:auto;-webkit-overflow-scrolling:touch;padding:0 16px 16px;flex:1}
+#sheet .grp{margin:14px 4px 6px;font-size:12.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+#sheet .list{background:var(--bg);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+#sheet .row{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;padding:10px 14px;border:0;border-top:1px solid var(--line);background:none;color:var(--ink);font:inherit;text-align:left}
+#sheet .list .row:first-child{border-top:0}
+#sheet .row:active{background:var(--press)}
+#sheet .row.cur{font-weight:700;color:var(--acc)}
+#sheet .row .tx{flex:1;min-width:0} #sheet .row small{display:block;color:var(--muted);font-size:13.5px;line-height:1.35;margin-top:2px;font-weight:400}
+#sheet .row mark{background:color-mix(in srgb,var(--acc) 25%,transparent);color:inherit;border-radius:3px}
+#sheet .row .go{color:var(--muted);flex:none}
+#sheet input[type=search]{flex:1;min-width:0;font:inherit;padding:11px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+#sheet .call911{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:58px;border:0;border-radius:14px;background:var(--sos);color:#fff;font:inherit;font-size:19px;font-weight:700;margin:4px 0 6px}
+#sheet .note{color:var(--muted);font-size:14px;margin:10px 4px}
+#sheet ul.chk{margin:6px 4px 12px;padding-left:0;list-style:none} #sheet ul.chk li{margin:6px 0}
+#sheet .btn{width:100%;min-height:48px;border:0;border-radius:14px;background:var(--acc);color:#fff;font:inherit;font-weight:600;margin-top:6px}
+#toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 76px);transform:translateX(-50%);background:#222;color:#fff;font-size:15px;padding:10px 16px;border-radius:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90%;z-index:30}
 #toast.on{opacity:.95}
 </style>
 </head>
@@ -66,28 +96,85 @@ iframe{flex:1;width:100%;border:0;background:var(--bg)}
   </form>
 </div>
 <div id="app">
-  <div id="bar"><div id="left"><button id="back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><button id="home" aria-label="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg></button><button type="button" id="stamp" hidden></button></div><h1 id="title"></h1><div id="right"><button id="themeBtn" aria-label="Light or dark"></button></div></div>
-  <iframe id="view" title="Page"></iframe>
+  <div id="bar"><div id="left"><button id="back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span id="backLbl"></span></button><button type="button" id="stamp" hidden></button></div><h1 id="title" role="button" tabindex="0"></h1><div id="right"><button id="themeBtn" aria-label="Light or dark"></button></div></div>
+  <div id="stage"></div>
+  <nav id="tabs" aria-label="Main">
+    <button type="button" data-tab="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg>Home</button>
+    <button type="button" data-tab="sos" class="sos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v9M7.5 12h9"/></svg>Emergency</button>
+    <button type="button" data-tab="toc"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1.2" fill="currentColor"/><circle cx="4.5" cy="12" r="1.2" fill="currentColor"/><circle cx="4.5" cy="18" r="1.2" fill="currentColor"/></svg>Contents</button>
+    <button type="button" data-tab="search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.6-3.6"/></svg>Search</button>
+    <button type="button" data-tab="kit"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h16v12H4z"/><path d="M9 8V5h6v3"/><path d="M4 13h16"/><path d="M11 13v2h2v-2"/></svg>Kit</button>
+  </nav>
 </div>
 <div id="toast"></div>
+<div id="scrim" hidden></div>
 <div id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetH" hidden></div>
 <script>
 (function(){
-  var KEYSTORE='prep.key.v1', pages=null, stack=[], meta=null, liveKey=null, current='home';
-  // stack: [{n: page name, s: saved spot (scroll + open sections)}], so Back returns you to where you were.
-  // One light/dark setting for the whole app. Field Tools pages and the inventory read the same keys.
+  var KEYSTORE='prep.key.v1', pages=null, stack=[], meta=null, liveKey=null, cur=null, built='', ready=null;
+  // stack: [{n: page, sec: section id or none, h: spot to scroll to, s: saved scroll/open sections}]. Back walks it.
   var TI={auto:'<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17A8.5 8.5 0 0 0 12 3.5z" fill="currentColor"/>',
     light:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/>',
     dark:'<path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/>'};
+  var CH='<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>';
   function theme(){ try{ var v=JSON.parse(localStorage.getItem('ft.theme')); return v==='light'||v==='dark'?v:'auto'; }catch(e){ return 'auto'; } }
   function setTheme(t){
     try{ localStorage.setItem('ft.theme',JSON.stringify(t)); if(t==='auto') localStorage.removeItem('twoWeeksReady.v1.theme'); else localStorage.setItem('twoWeeksReady.v1.theme',t); }catch(e){}
     if(t==='auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme',t);
     document.getElementById('themeBtn').innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+TI[t]+'</svg>';
   }
-  var HEAD="<script>try{var t=JSON.parse(localStorage.getItem('ft.theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}<\/script>"+
-    "<style>.toprow,.printbar,#themeBtn,header.top{display:none!important}body>.wrap>header .eyebrow,body>.wrap>header h1{display:none}<\/style>";
-  function inject(html){ return /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, function(m){return m+HEAD;}) : HEAD+html; }
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+
+  // ---- Inside every page: list mode (a guide's sections as rows), section mode (one section), edge swipe = Back.
+  var PAGE_CSS="<style>.toprow,.printbar,#themeBtn,header.top,nav.chips{display:none!important}body>.wrap>header .eyebrow,body>.wrap>header h1{display:none}"+
+    "html.fn-list main.wrap>details.panel,html.fn-list main.wrap>[data-chip],html.fn-list main.wrap>.toolbar{display:none!important}"+
+    "html.fn-sec main.wrap>*:not(.fn-on):not(.fnh):not(.fnnext):not(script):not(style){display:none!important}html.fn-sec .fn-on>summary{display:none!important}"+
+    "html.fn-sec details.panel.fn-on{border:0;background:none;box-shadow:none}html.fn-sec details.panel.fn-on>.pbody{padding-left:0;padding-right:0}"+
+    ".fnh{margin:10px 2px 4px;font-size:1.35rem;line-height:1.25}"+
+    ".fnlist{margin:4px 0 18px}.fnlist h3{margin:20px 6px 7px;font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}.fnlist h3:first-child{margin-top:8px}"+
+    ".fnlist h3.now{color:var(--danger)}.fngrp{background:var(--paper);border:1px solid var(--line);border-radius:16px;overflow:hidden}"+
+    ".fnrow{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:12px;width:100%;min-height:62px;padding:11px 12px 11px 12px;border-top:1px solid var(--line);cursor:pointer}"+
+    ".fngrp .fnrow:first-child{border-top:0}.fnrow:active{background:var(--soft)}.fnrow:focus-visible{outline:3px solid var(--accent-ink);outline-offset:-3px}"+
+    ".fnrow .tx{flex:1;min-width:0}.fnrow b{display:block;font-weight:650;font-size:1.02rem;line-height:1.3;color:var(--ink)}.fnrow small{display:block;color:var(--muted);font-size:.86rem;line-height:1.35;margin-top:2px}"+
+    ".fnrow .go{flex:none;color:var(--muted);display:grid}"+
+    ".fnnext{all:unset;box-sizing:border-box;display:flex;align-items:center;gap:10px;width:100%;margin:22px 0 8px;padding:12px 16px;min-height:60px;border-radius:16px;background:var(--paper);border:1px solid var(--line);cursor:pointer;color:var(--ink);font-weight:650}"+
+    ".fnnext span{flex:1}.fnnext small{display:block;font-size:.78rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}.fnnext:active{background:var(--soft)}<\/style>";
+  var PAGE_JS="<script>(function(){var O=window.FN||{};"+
+    "function post(m){try{parent.postMessage(m,'*');}catch(x){}}"+
+    "function esc(s){return String(s).replace(/[&<>\"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c];});}"+
+    "function secs(){var m=document.querySelector('main.wrap');if(!m)return[];return[].filter.call(m.children,function(e){return(e.matches('details.panel')||e.hasAttribute('data-chip'))&&e.id&&!e.classList.contains('printcard');});}"+
+    "function ttl(e){var h=e.querySelector('summary h2')||e.querySelector('h2');return((h&&h.textContent)||e.getAttribute('data-chip')||'').trim();}"+
+    "function sh(e){return(e.getAttribute('data-chip')||ttl(e)).trim();}"+
+    "function key(e){var k=e.querySelector('summary .key');return k?k.textContent.trim():'';}"+
+    "var CH='"+CH.replace(/'/g,"\\'")+"';"+
+    "function openTo(id){var t=document.getElementById(id);if(!t)return;for(var n=t;n;n=n.parentElement){if(n.tagName==='DETAILS')n.open=true;}setTimeout(function(){t.scrollIntoView({block:'start'});},40);}"+
+    "document.addEventListener('DOMContentLoaded',function(){var R=document.documentElement,S=secs(),M=document.querySelector('main.wrap');"+
+    // Pages without sections (Markdown pages): give each heading an id so Contents can jump to it.
+    "if(!S.length)[].forEach.call(document.querySelectorAll('main h2, .mdoc h2'),function(h,i){if(!h.id)h.id='fnh'+i;});"+
+    "if(O.mode==='list'&&S.length){R.classList.add('fn-list');var by={},used={};S.forEach(function(e){by[e.id]=e;});"+
+      "var G=(O.groups||[]).map(function(g){return[g[0],g[1].filter(function(i){return by[i]&&!used[i]&&(used[i]=1);})];});"+
+      "var rest=S.filter(function(e){return!used[e.id];}).map(function(e){return e.id;});"+
+      "if(rest.length){var gi=G.length&&/reference/i.test(G[G.length-1][0])?G.length-2:G.length-1;if(gi<0)G.push(['Sections',rest]);else G[gi][1]=G[gi][1].concat(rest);}"+
+      "var h=G.filter(function(g){return g[1].length;}).map(function(g,gi){return'<h3'+(gi===0&&/now/i.test(g[0])?' class=\"now\"':'')+'>'+esc(g[0])+'</h3><div class=\"fngrp\">'+g[1].map(function(id){var e=by[id],d=e.querySelector('summary .dot');"+
+        "return'<button type=\"button\" class=\"fnrow\" data-sec=\"'+id+'\">'+(d?d.outerHTML:'')+'<span class=\"tx\"><b>'+esc(ttl(e))+'</b>'+(key(e)?'<small>'+esc(key(e))+'</small>':'')+'</span><span class=\"go\">'+CH+'</span></button>';}).join('')+'</div>';}).join('');"+
+      "var nv=document.createElement('nav');nv.className='fnlist';nv.setAttribute('aria-label','Sections');nv.innerHTML=h;M.insertBefore(nv,S[0]);"+
+      "nv.addEventListener('click',function(ev){var b=ev.target.closest('.fnrow');if(b)post({fnSec:b.getAttribute('data-sec')});});}"+
+    "else if(O.mode==='sec'){R.classList.add('fn-sec');var e=document.getElementById(O.sec);if(e){e.classList.add('fn-on');if(e.tagName==='DETAILS')e.open=true;"+
+      "var t=ttl(e);if(t&&t.toLowerCase()!==sh(e).toLowerCase()){var hh=document.createElement('h2');hh.className='fnh';hh.textContent=t;M.insertBefore(hh,e);}"+
+      "var nx=S.filter(function(x){return!/^(sources|more)$/.test(x.id);}),i=nx.indexOf(e),n=i>=0?nx[i+1]:null;"+
+      "if(n){var a=document.createElement('button');a.type='button';a.className='fnnext';a.innerHTML='<span><small>Next</small>'+esc(ttl(n))+'</span>'+CH;a.onclick=function(){post({fnSec:n.id,replace:1});};e.after(a);}"+
+      "if(O.h&&O.h!==O.sec)openTo(O.h);}"+
+      // A link to another section of this guide opens that section's screen.
+      "window.addEventListener('click',function(ev){var a=ev.target.closest&&ev.target.closest('a[href^=\"#\"]');if(!a)return;var id=a.getAttribute('href').slice(1),t=document.getElementById(id);if(!t)return;var on=document.querySelector('.fn-on');if(on&&on.contains(t))return;ev.preventDefault();ev.stopImmediatePropagation();post({go:O.page,hash:id});},true);}"+
+    "else if(O.h){openTo(O.h);}"+
+    "});"+
+    "window.addEventListener('message',function(ev){var d=ev.data||{};if(d.fnJump)openTo(d.fnJump);});"+
+    // Swipe in from the left edge = Back.
+    "var sx=null,sy=0;document.addEventListener('touchstart',function(e){var t=e.touches[0];sx=t.clientX<26?t.clientX:null;sy=t.clientY;},{passive:true});"+
+    "document.addEventListener('touchend',function(e){if(sx==null)return;var t=e.changedTouches[0];if(t.clientX-sx>70&&Math.abs(t.clientY-sy)<70)post({fnBack:1});sx=null;},{passive:true});"+
+    "})();<\/script>";
+  function head(o){ return "<script>try{var t=JSON.parse(localStorage.getItem('ft.theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}window.FN="+JSON.stringify(o).replace(/</g,'\\u003c')+";<\/script>"+PAGE_CSS+PAGE_JS; }
+  function inject(html,o){ var H=head(o); return /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, function(m){return m+H;}) : H+html; }
   setTheme(theme());
   function b64(buf){return btoa(String.fromCharCode.apply(null,new Uint8Array(buf)));}
   function unb64(s){var b=atob(s),a=new Uint8Array(b.length);for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return a;}
@@ -110,70 +197,162 @@ iframe{flex:1;width:100%;border:0;background:var(--bg)}
   }
   async function unlockWith(key,data,remember){
     var bundle=await decrypt(key,data);
-    pages=bundle.pages; liveKey=key;
+    pages=bundle.pages; liveKey=key; parsed={};
     if(remember){ put(KEYSTORE, JSON.stringify({salt:meta.salt,k:b64(await crypto.subtle.exportKey('raw',key))})); }
     document.getElementById('lock').style.display='none';
     document.getElementById('app').style.display='flex';
     built=bundle.built; checkOffline(); if(navigator.serviceWorker&&navigator.serviceWorker.ready) navigator.serviceWorker.ready.then(function(){ setTimeout(checkOffline,1500); });
-    var start=(location.hash||'').slice(1); show(pages[start]?start:'home');
+    var start=(location.hash||'').slice(1).split('/'); stack=[]; if(pages[start[0]]&&start[0]!=='home'){ stack=[{n:'home'}]; go(start[0],start[1]||'',{dir:'none'}); } else { stack=[{n:'home'}]; render('none'); }
   }
-  function frame(){ var f=document.getElementById('view'), d=null; try{ d=f.contentDocument; }catch(e){} return {f:f,d:d,w:f.contentWindow}; }
-  // Where you are on the current page: scroll position and which sections are open.
+
+  // ---- What's in a page (sections, titles, text), read from its HTML without running it. Used by Contents, Search and titles.
+  var parsed={};
+  function info(name){ if(parsed[name]) return parsed[name]; var p=pages[name]; if(!p) return null;
+    var d=new DOMParser().parseFromString(p.html,'text/html'), m=d.querySelector('main.wrap'), S=[];
+    if(m) S=[].filter.call(m.children,function(e){ return (e.matches('details.panel')||e.hasAttribute('data-chip'))&&e.id&&!e.classList.contains('printcard'); });
+    var out={doc:d, secs:S.map(function(e){ var h=e.querySelector('summary h2')||e.querySelector('h2'), k=e.querySelector('summary .key');
+      return {id:e.id, t:((h&&h.textContent)||e.getAttribute('data-chip')||'').trim(), s:(e.getAttribute('data-chip')||(h&&h.textContent)||'').trim(), k:k?k.textContent.trim():''}; })};
+    if(!S.length){ out.heads=[].map.call(d.querySelectorAll('main h2, .mdoc h2'),function(h,i){ return {id:h.id||('fnh'+i), t:h.textContent.trim(), s:h.textContent.trim(), k:''}; }); }
+    parsed[name]=out; return out; }
+  function secOf(name,id){ var I=info(name); if(!I||!id) return ''; var t=I.doc.getElementById(id); if(!t) return '';
+    for(var i=0;i<I.secs.length;i++){ var e=I.doc.getElementById(I.secs[i].id); if(e&&e.contains(t)) return I.secs[i].id; } return ''; }
+  function split(name){ var p=pages[name]; return !!(p&&p.nav&&p.nav.split); }
+  function titleOf(en){ if(!en) return ''; if(en.n==='home') return 'Field Notes'; var p=pages[en.n]; if(!p) return '';
+    if(en.sec){ var I=info(en.n), s=I&&I.secs.filter(function(x){return x.id===en.sec;})[0]; if(s) return s.s; } return p.title; }
+
+  // ---- Frames and the slide.
+  function frame(){ var f=cur, d=null; try{ d=f&&f.contentDocument; }catch(e){} return {f:f,d:d,w:f&&f.contentWindow}; }
   function snap(){ var v=frame(); if(!v.d||!v.d.documentElement) return null;
     return {y:v.w.scrollY||v.d.documentElement.scrollTop||0, det:[].map.call(v.d.querySelectorAll('details'),function(x){return x.open?'1':'0';}).join('')}; }
-  function restore(s){ var v=frame(); if(!v.d||!s) return; var r=v.d.documentElement;
-    var ds=v.d.querySelectorAll('details'); if(ds.length===s.det.length) [].forEach.call(ds,function(x,i){ x.open=s.det.charAt(i)==='1'; });
-    var go=function(){ var sb=r.style.scrollBehavior; r.style.scrollBehavior='auto'; v.w.scrollTo(0,s.y); r.style.scrollBehavior=sb; };
+  function restore(f,s){ var d=f.contentDocument, w=f.contentWindow; if(!d||!s) return; var r=d.documentElement;
+    var ds=d.querySelectorAll('details'); if(ds.length===s.det.length) [].forEach.call(ds,function(x,i){ x.open=s.det.charAt(i)==='1'; });
+    var go=function(){ var sb=r.style.scrollBehavior; r.style.scrollBehavior='auto'; w.scrollTo(0,s.y); r.style.scrollBehavior=sb; };
     go(); setTimeout(go,80); setTimeout(go,300); }
+  var calm=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches, busyNav=false;
+  // Show the screen on top of the stack. dir: 'push' (slides in from the right), 'pop' (slides away to the right), 'none'.
+  function render(dir){
+    var en=stack[stack.length-1], p=pages[en.n]; if(!p){ toast('That page is not in the phone app.'); return; }
+    var o={page:en.n, mode: en.sec?'sec':(split(en.n)?'list':'page'), sec:en.sec||'', h:en.h||'', groups:(p.nav&&p.nav.groups)||[]};
+    var stage=document.getElementById('stage'), old=cur, f=document.createElement('iframe'); f.title=titleOf(en)||'Page';
+    if(old&&dir==='pop'){ stage.insertBefore(f,old); } else stage.appendChild(f);
+    var done=false;
+    f.onload=function(){ if(done) return; done=true; if(en.s) restore(f,en.s);
+      cur=f; var kill=function(){ if(old&&old.parentNode) old.remove(); f.classList.remove('under'); busyNav=false; };
+      if(!old||dir==='none'||calm||!f.animate){ kill(); return; }
+      var E={duration:330,easing:'cubic-bezier(.2,.8,.2,1)'};
+      if(dir==='push'){ old.classList.add('under'); old.animate([{transform:'none'},{transform:'translateX(-28%)'}],E); f.animate([{transform:'translateX(100%)'},{transform:'none'}],E).onfinish=kill; }
+      else { f.classList.add('under'); f.animate([{transform:'translateX(-28%)'},{transform:'none'}],E); old.animate([{transform:'none'},{transform:'translateX(100%)'}],E).onfinish=kill; }
+    };
+    busyNav=true; setTimeout(function(){ busyNav=false; },900);
+    f.srcdoc=inject(p.html,o);
+    chrome();
+  }
+  // Bar, tabs and address for the current screen.
+  function chrome(){
+    var en=stack[stack.length-1], p=pages[en.n], home=en.n==='home';
+    var prev=stack[stack.length-2], back=document.getElementById('back');
+    back.hidden=!prev; if(prev){ var l=prev.n==='home'?'Home':titleOf(prev); if(l.length>12) l='Back'; document.getElementById('backLbl').textContent=l; back.setAttribute('aria-label','Back to '+l); }
+    var barEl=document.getElementById('bar'); if(!home&&p.accent){ barEl.classList.add('tinted'); barEl.style.setProperty('--pa',p.accent); } else barEl.classList.remove('tinted');
+    var t=document.getElementById('title'); t.textContent=titleOf(en); t.setAttribute('aria-label', home?'Field Notes':titleOf(en)+'. Go to Home');
+    [].forEach.call(document.querySelectorAll('#tabs button'),function(b){ var k=b.getAttribute('data-tab'); b.classList.toggle('on',(k==='home'&&home)||(k==='kit'&&en.n==='inventory')); });
+    stampChip(); history.replaceState(null,'','#'+en.n+(en.sec?'/'+en.sec:''));
+  }
+  function remember(){ var top=stack[stack.length-1]; if(top) top.s=snap(); }
+  // Go to a page (and a spot in it). On a split guide, a spot opens the section screen that holds it.
+  function go(name,hash,opt){ opt=opt||{}; if(!pages[name]){ toast('That page is not in the phone app.'); return; }
+    if(name==='home'){ goHome(); return; }
+    var top=stack[stack.length-1], en={n:name};
+    if(split(name)&&hash){ en.sec=secOf(name,hash)||''; if(en.sec&&hash!==en.sec) en.h=hash; if(!en.sec) en.h=hash; } else if(hash) en.h=hash;
+    // Already here: just scroll.
+    if(top&&top.n===en.n&&(top.sec||'')===(en.sec||'')&&en.h){ var v=frame(); if(v.w) v.w.postMessage({fnJump:en.h},'*'); return; }
+    remember();
+    if(opt.replace&&stack.length>1) stack[stack.length-1]=en; else stack.push(en);
+    render(opt.dir||'push'); }
+  function goHome(){ if(stack.length===1&&stack[0].n==='home') { var v=frame(); if(v.w) v.w.scrollTo({top:0,behavior:'smooth'}); return; }
+    remember(); stack=[{n:'home'}]; render(cur?'pop':'none'); }
+  function back(){ if(stack.length<2||busyNav) return; stack.pop(); render('pop'); }
+
+  // ---- Sheets: Contents, Search, Emergency, Offline.
+  var sheetEl=document.getElementById('sheet'), scrim=document.getElementById('scrim'), lastFocus=null;
+  function openSheet(title,body,opt){ opt=opt||{}; lastFocus=document.activeElement;
+    sheetEl.className=opt.tall?'tall':''; sheetEl.innerHTML='<div class="grab"></div><div class="sh-head">'+(opt.headHTML||'<h2 id="sheetH">'+esc(title)+'</h2>')+'<button type="button" class="sh-x">'+(opt.x||'Done')+'</button></div><div class="sh-body">'+body+'</div>';
+    sheetEl.hidden=false; scrim.hidden=false; sheetEl.querySelector('.sh-x').onclick=closeSheet;
+    if(!calm&&sheetEl.animate) sheetEl.animate([{transform:'translateY(100%)'},{transform:'none'}],{duration:260,easing:'cubic-bezier(.2,.8,.2,1)'});
+    var f=sheetEl.querySelector(opt.focus||'.sh-x'); if(f) f.focus(); }
+  function closeSheet(){ if(sheetEl.hidden) return; sheetEl.hidden=true; scrim.hidden=true; sheetEl.innerHTML=''; if(lastFocus&&lastFocus.focus) lastFocus.focus(); }
+  scrim.onclick=closeSheet;
+  sheetEl.addEventListener('click',function(e){ var b=e.target.closest('[data-go]'); if(!b) return;
+    var g=b.getAttribute('data-go').split('#'); closeSheet();
+    if(b.hasAttribute('data-sec')){ var top=stack[stack.length-1]; go(g[0],g[1],{replace:!!top.sec}); } else go(g[0],g[1]||''); });
+  var ORDER=[['Guides',['medical','outage','pictures','earthquake','power','water','food','smoke','sanitation','radio','cece']],['My kit',['inventory','shopping','todo','supplies','fieldtools','iphone','movies']]];
+  function row(target,t,k,curOn,isSec){ return '<button type="button" class="row'+(curOn?' cur':'')+'" data-go="'+esc(target)+'"'+(isSec?' data-sec':'')+'><span class="tx">'+esc(t)+(k?'<small>'+esc(k)+'</small>':'')+'</span><span class="go">'+CH+'</span></button>'; }
+  function allGuides(){ return ORDER.map(function(g){ var r=g[1].filter(function(k){return pages[k];}).map(function(k){ return row(k,pages[k].title,'',false); }).join('');
+    return r?'<div class="grp">'+g[0]+'</div><div class="list">'+r+'</div>':''; }).join(''); }
+  function contents(){ var en=stack[stack.length-1];
+    if(en.n==='home'){ openSheet('All guides',allGuides()); return; }
+    var I=info(en.n), p=pages[en.n], list=(I.secs.length?I.secs:I.heads)||[], body='';
+    if(!list.length) body='<p class="note">This page has no sections.</p>';
+    else if(split(en.n)){ var by={},used={}; list.forEach(function(s){by[s.id]=s;});
+      var G=((p.nav&&p.nav.groups)||[]).map(function(g){ return [g[0],g[1].filter(function(i){ return by[i]&&!used[i]&&(used[i]=1); })]; });
+      var rest=list.filter(function(s){return !used[s.id];}).map(function(s){return s.id;}); if(rest.length) G.push(['More',rest]);
+      body=G.filter(function(g){return g[1].length;}).map(function(g){ return '<div class="grp">'+esc(g[0])+'</div><div class="list">'+g[1].map(function(id){ var s=by[id]; return row(en.n+'#'+id,s.t,s.k,en.sec===id,true); }).join('')+'</div>'; }).join('');
+    } else body='<div class="list">'+list.map(function(s){ return row(en.n+'#'+s.id,s.t,s.k,false); }).join('')+'</div>';
+    body+='<div class="grp">Other guides</div><div class="list">'+row('home','All guides','Back to the home screen',false)+'</div>';
+    openSheet(p.title,body); }
+  var SOS=[['medical#cpr','CPR','Not breathing normally'],['medical#choke','Choking',''],['medical#bleed','Bad bleeding',''],['pictures','Picture guide','Photo steps: CPR, choking, bleeding'],
+    ['power#safety','Carbon monoxide','Alarm, headache, dizziness near a heater'],['outage#first','Power or internet out','The first 15 minutes'],['earthquake#during','Earthquake','During and the first hour'],
+    ['smoke#aqi','Wildfire smoke','Air quality and what to do'],['cece#urgent','Cece emergency','Warning signs: get to a vet']];
+  function sos(){ var r=SOS.filter(function(x){ return pages[x[0].split('#')[0]]; }).map(function(x){ return row(x[0],x[1],x[2],false); }).join('');
+    openSheet('Emergency','<button type="button" class="call911" id="c911"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>Call 911</button><div class="list">'+r+'</div>');
+    document.getElementById('c911').onclick=function(){ location.href='tel:911'; }; }
+  // Search: every section of every page, offline. All words must match; titles rank first.
+  var IDX=null;
+  function buildIdx(){ IDX=[]; Object.keys(pages).forEach(function(k){ if(k==='home') return; var I=info(k), d=I.doc;
+      [].forEach.call(d.querySelectorAll('script,style,.printcard,img,svg'),function(x){ x.remove(); });
+      var add=function(id,t,el){ var tx=(el?el.textContent:'').replace(/\s+/g,' ').trim(); IDX.push({n:k,id:id,t:t,tx:tx,lt:(pages[k].title+' '+t).toLowerCase(),lx:tx.toLowerCase()}); };
+      if(I.secs.length) I.secs.forEach(function(s){ add(s.id,s.t,d.getElementById(s.id)); });
+      else if(I.heads&&I.heads.length){ var hs=d.querySelectorAll('main h2, .mdoc h2'); [].forEach.call(hs,function(h,i){ var tx=''; for(var n=h.nextElementSibling;n&&n.tagName!=='H2';n=n.nextElementSibling) tx+=' '+n.textContent; IDX.push({n:k,id:I.heads[i].id,t:I.heads[i].t,tx:tx.replace(/\s+/g,' ').trim(),lt:(pages[k].title+' '+I.heads[i].t).toLowerCase(),lx:tx.toLowerCase()}); }); }
+      else add('',pages[k].title,d.body); }); }
+  function hl(s,ws){ s=esc(s); ws.forEach(function(w){ if(w.length<2) return; s=s.replace(new RegExp('('+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','ig'),'<mark>$1</mark>'); }); return s; }
+  function runSearch(q){ var out=document.getElementById('sres'); q=q.trim().toLowerCase(); if(!q){ out.innerHTML='<p class="note">Search every guide, even offline. Try "CO", "bleach" or "Cece".</p>'; return; }
+    if(!IDX) buildIdx(); var ws=q.split(/\s+/);
+    var hits=IDX.map(function(e){ var all=(e.lt+' '+e.lx); if(!ws.every(function(w){ return all.indexOf(w)>=0; })) return null;
+      var sc=ws.reduce(function(a,w){ return a+(e.lt.indexOf(w)>=0?10:0)+(e.lx.split(w).length-1); },0); return [sc,e]; }).filter(Boolean).sort(function(a,b){ return b[0]-a[0]; }).slice(0,40);
+    if(!hits.length){ out.innerHTML='<p class="note">Nothing found for "'+esc(q)+'".</p>'; return; }
+    out.innerHTML='<div class="list">'+hits.map(function(h){ var e=h[1], i=e.lx.indexOf(ws[0]), sn=i<0?e.tx.slice(0,110):(i>50?'…':'')+e.tx.slice(Math.max(0,i-50),i+90)+'…';
+      return '<button type="button" class="row" data-go="'+esc(e.n+(e.id?'#'+e.id:''))+'"><span class="tx">'+hl(e.t,ws)+'<small>'+esc(pages[e.n].title)+' · '+hl(sn,ws)+'</small></span><span class="go">'+CH+'</span></button>'; }).join('')+'</div>'; }
+  function search(){ openSheet('Search','<div id="sres"></div>',{tall:true,x:'Cancel',focus:'#sq',headHTML:'<input type="search" id="sq" placeholder="Search every guide" aria-label="Search every guide" autocomplete="off" enterkeyhint="search">'});
+    var q=document.getElementById('sq'); q.value=search.last||''; runSearch(q.value); q.addEventListener('input',function(){ search.last=q.value; runSearch(q.value); }); }
+
   // ---- "Ready offline": a real check that this phone can open everything with no internet.
-  var built='', ready=null;
   async function checkOffline(){
     var r={sw:false, files:false, pages:!!pages, n:pages?Object.keys(pages).length:0};
     try{ r.sw=!!(navigator.serviceWorker && navigator.serviceWorker.controller); }catch(e){}
     try{ var c=await caches.open('prep-v2'); var a=await c.match('index.html'), b=await c.match('data.bin',{ignoreSearch:true}); r.files=!!(a&&b); }catch(e){}
-    r.ok=r.sw&&r.files&&r.pages; ready=r; bar(); return r;
+    r.ok=r.sw&&r.files&&r.pages; ready=r; stampChip(); return r;
   }
   // Home only: a small offline status chip where Back would be. Tap for details.
-  function bar(){ var s=document.getElementById('stamp');
-    s.hidden = current!=='home'; if(s.hidden) return;
+  function stampChip(){ var s=document.getElementById('stamp'), en=stack[stack.length-1];
+    s.hidden = !en||en.n!=='home'; if(s.hidden) return;
     if(!ready){ s.textContent='…'; s.className=''; s.setAttribute('aria-label','Checking offline'); return; }
     s.textContent= ready.ok ? '✓ Offline' : '⚠︎ Offline?'; s.className= ready.ok ? 'ok' : 'warn';
     s.setAttribute('aria-label', (ready.ok?'Ready offline':'Not fully offline yet')+'. Show details'); }
-  function sheet(){ var r=ready||{}, el=document.getElementById('sheet');
+  function offlineSheet(){ var r=ready||{};
     var li=function(ok,t){ return '<li>'+(ok?'✓ ':'✗ ')+t+'</li>'; };
-    el.innerHTML='<h2 id="sheetH">'+(r.ok?'Ready offline':'Not fully offline yet')+'</h2><ul>'+
+    openSheet(r.ok?'Ready offline':'Not fully offline yet','<ul class="chk">'+
       li(r.sw,'App saved on this phone (works in airplane mode)')+li(r.files,'Encrypted pages saved on this phone')+
       li(r.pages,(r.n||0)+' pages unlocked'+(built?', '+built:''))+'</ul>'+
-      (r.ok?'':'<p>Open the app once with internet and leave it open for a few seconds, then check again.</p>')+
-      '<p style="color:var(--muted)"><b>Mac and ES_BACKUP only:</b> PDF books and manuals, the Kiwix library, movies, the full map. The PDFs you set up in Files and Kiwix on the phone are separate apps.</p>'+
-      '<button type="button" id="sheetX">Close</button>';
-    el.hidden=false; var x=document.getElementById('sheetX'); x.focus(); x.onclick=function(){ el.hidden=true; document.getElementById('stamp').focus(); }; }
-  function remember(){ var top=stack[stack.length-1]; if(top&&top.n===current) top.s=snap(); }
+      (r.ok?'':'<p class="note">Open the app once with internet and leave it open for a few seconds, then check again.</p>')+
+      '<p class="note"><b>Mac and ES_BACKUP only:</b> PDF books and manuals, the Kiwix library, movies, the full map. The PDFs you set up in Files and Kiwix on the phone are separate apps.</p>'); }
   function busy(){ var v=frame(); return !!(v.d&&v.d.documentElement&&v.d.documentElement.dataset.busy); }
-  // Light/dark: change it inside the open page, so nothing reloads and running tools (CPR beat) keep going.
   function themeFrame(){ var v=frame(); if(!v.d||!v.d.documentElement) return; var t=theme(), r=v.d.documentElement;
     if(t==='auto') r.removeAttribute('data-theme'); else r.setAttribute('data-theme',t); }
-  function show(name,hash,opt){
-    opt=opt||{}; var p=pages[name]; if(!p){toast('That page is not in the phone app.');return;}
-    // Home is the top: arriving there starts a fresh Back history, so Back never sits next to the offline chip.
-    if(name==='home') stack=[];
-    if(!opt.noPush||name==='home'){ remember(); if(!stack.length||stack[stack.length-1].n!==name) stack.push({n:name}); }
-    current=name;
-    var f=document.getElementById('view');
-    f.onload=function(){ var d=f.contentDocument;
-      if(opt.state){ restore(opt.state); }
-      else if(hash){ var t=d&&d.getElementById(hash); if(t){ for(var n=t;n;n=n.parentElement){ if(n.tagName==='DETAILS') n.open=true; } t.scrollIntoView(); } } };
-    f.srcdoc=inject(p.html);
-    document.getElementById('back').hidden = stack.length<2;
-    // Back is the main control. Home shows up once you're two or more pages in (pages link to each other).
-    document.getElementById('home').hidden = stack.length<3;
-    var barEl=document.getElementById('bar'); if(name!=='home'&&p.accent){ barEl.classList.add('tinted'); barEl.style.setProperty('--pa',p.accent); } else barEl.classList.remove('tinted');
-    document.getElementById('title').textContent = name==='home' ? 'Field Notes' : p.title; bar();
-    history.replaceState(null,'','#'+name);
-  }
+
   window.addEventListener('message',function(e){
     var m=e.data||{};
-    if(m.go) show(m.go,m.hash);
+    if(m.fnBack) back();
+    else if(m.fnSec){ var top=stack[stack.length-1]; go(top.n,m.fnSec,{replace:!!m.replace}); }
+    else if(m.go) go(m.go,m.hash);
     else if(m.ext){ if(/^tel:|^sms:|^mailto:/.test(m.ext)) location.href=m.ext; else window.open(m.ext,'_blank'); }
     else if(m.missing) toast('That file is on the Mac and the ES_BACKUP drive, not in the phone app.');
   });
@@ -183,17 +362,22 @@ iframe{flex:1;width:100%;border:0;background:var(--bg)}
     try{ var r=await fetch('version.json',{cache:'no-store'}); var m=await r.json(); if(!meta||m.version===meta.version) return;
       if(m.salt!==meta.salt){ put(KEYSTORE,null); location.reload(); return; }
       meta=m; var d=new Uint8Array(await (await fetch('data.bin?v='+m.version)).arrayBuffer()); var b=await decrypt(liveKey,d);
-      pages=b.pages; built=b.built; checkOffline();
-      // Never interrupt a running tool; the update shows up on the next page you open.
-      if(!busy()) show(pages[current]?current:'home',null,{noPush:true,state:snap()}); toast('Updated to the latest version.');
+      pages=b.pages; built=b.built; parsed={}; IDX=null; checkOffline();
+      stack=stack.filter(function(x){ return pages[x.n]; }); if(!stack.length) stack=[{n:'home'}];
+      // Never interrupt a running tool; the update shows up on the next screen you open.
+      if(!busy()){ remember(); render('none'); } toast('Updated to the latest version.');
     }catch(e){}
   });
-  document.getElementById('home').onclick=function(){stack=[];show('home');};
-  document.getElementById('stamp').onclick=function(){ if(current==='home') sheet(); };
-  document.addEventListener('keydown',function(e){ if(e.key==='Escape'){ var el=document.getElementById('sheet'); if(!el.hidden){ el.hidden=true; } } });
+  document.getElementById('stamp').onclick=function(){ offlineSheet(); };
+  document.getElementById('title').onclick=function(){ if(stack[stack.length-1].n!=='home') goHome(); };
+  document.getElementById('title').onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); this.onclick(); } };
+  document.getElementById('back').onclick=back;
+  document.getElementById('tabs').addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; var k=b.getAttribute('data-tab');
+    if(k==='home'){ closeSheet(); goHome(); } else if(k==='kit'){ closeSheet(); if(stack[stack.length-1].n!=='inventory') go('inventory'); }
+    else if(k==='toc') contents(); else if(k==='search') search(); else if(k==='sos') sos(); });
+  document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeSheet(); });
   document.getElementById('themeBtn').onclick=function(){ var n={auto:'light',light:'dark',dark:'auto'}[theme()]; setTheme(n);
     toast(n==='auto'?'Theme: matches your phone':'Theme: '+(n==='light'?'Light':'Dark')); themeFrame(); };
-  document.getElementById('back').onclick=function(){ if(stack.length>1){ stack.pop(); var top=stack[stack.length-1]; show(top.n,null,{noPush:true,state:top.s}); } };
 
   document.getElementById('form').addEventListener('submit',async function(e){
     e.preventDefault(); var err=document.getElementById('err'); err.textContent='Unlocking…';
