@@ -60,6 +60,7 @@ iframe{flex:1;width:100%;border:0;background:var(--bg)}
 <script>
 (function(){
   var KEYSTORE='prep.key.v1', pages=null, stack=[], meta=null, liveKey=null, current='home';
+  // stack: [{n: page name, s: saved spot (scroll + open sections)}], so Back returns you to where you were.
   // One light/dark setting for the whole app. Field Tools pages and the inventory read the same keys.
   var TI={auto:'<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17A8.5 8.5 0 0 0 12 3.5z" fill="currentColor"/>',
     light:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M4.9 19.1l1.8-1.8M17.3 6.7l1.8-1.8"/>',
@@ -102,13 +103,28 @@ iframe{flex:1;width:100%;border:0;background:var(--bg)}
     document.getElementById('stamp').textContent='Updated '+bundle.built;
     var start=(location.hash||'').slice(1); show(pages[start]?start:'home');
   }
-  function show(name,hash,noPush){
-    var p=pages[name]; if(!p){toast('That page is not in the phone app.');return;}
-    if(!noPush && stack[stack.length-1]!==name) stack.push(name);
+  function frame(){ var f=document.getElementById('view'), d=null; try{ d=f.contentDocument; }catch(e){} return {f:f,d:d,w:f.contentWindow}; }
+  // Where you are on the current page: scroll position and which sections are open.
+  function snap(){ var v=frame(); if(!v.d||!v.d.documentElement) return null;
+    return {y:v.w.scrollY||v.d.documentElement.scrollTop||0, det:[].map.call(v.d.querySelectorAll('details'),function(x){return x.open?'1':'0';}).join('')}; }
+  function restore(s){ var v=frame(); if(!v.d||!s) return; var r=v.d.documentElement;
+    var ds=v.d.querySelectorAll('details'); if(ds.length===s.det.length) [].forEach.call(ds,function(x,i){ x.open=s.det.charAt(i)==='1'; });
+    var go=function(){ var sb=r.style.scrollBehavior; r.style.scrollBehavior='auto'; v.w.scrollTo(0,s.y); r.style.scrollBehavior=sb; };
+    go(); setTimeout(go,80); setTimeout(go,300); }
+  function remember(){ var top=stack[stack.length-1]; if(top&&top.n===current) top.s=snap(); }
+  function busy(){ var v=frame(); return !!(v.d&&v.d.documentElement&&v.d.documentElement.dataset.busy); }
+  // Light/dark: change it inside the open page, so nothing reloads and running tools (CPR beat) keep going.
+  function themeFrame(){ var v=frame(); if(!v.d||!v.d.documentElement) return; var t=theme(), r=v.d.documentElement;
+    if(t==='auto') r.removeAttribute('data-theme'); else r.setAttribute('data-theme',t); }
+  function show(name,hash,opt){
+    opt=opt||{}; var p=pages[name]; if(!p){toast('That page is not in the phone app.');return;}
+    if(!opt.noPush){ remember(); if(!stack.length||stack[stack.length-1].n!==name) stack.push({n:name}); }
     current=name;
     document.getElementById('title').textContent= name==='home' ? 'Field Notes' : p.title;
     var f=document.getElementById('view');
-    f.onload=function(){ if(hash){ var d=f.contentDocument, t=d&&d.getElementById(hash); if(t){ for(var n=t;n;n=n.parentElement){ if(n.tagName==='DETAILS') n.open=true; } t.scrollIntoView(); } } };
+    f.onload=function(){ var d=f.contentDocument;
+      if(opt.state){ restore(opt.state); }
+      else if(hash){ var t=d&&d.getElementById(hash); if(t){ for(var n=t;n;n=n.parentElement){ if(n.tagName==='DETAILS') n.open=true; } t.scrollIntoView(); } } };
     f.srcdoc=inject(p.html);
     document.getElementById('back').hidden = stack.length<2;
     document.getElementById('home').hidden = name==='home';
@@ -126,13 +142,15 @@ iframe{flex:1;width:100%;border:0;background:var(--bg)}
     try{ var r=await fetch('version.json',{cache:'no-store'}); var m=await r.json(); if(!meta||m.version===meta.version) return;
       if(m.salt!==meta.salt){ put(KEYSTORE,null); location.reload(); return; }
       meta=m; var d=new Uint8Array(await (await fetch('data.bin?v='+m.version)).arrayBuffer()); var b=await decrypt(liveKey,d);
-      pages=b.pages; document.getElementById('stamp').textContent='Updated '+b.built; show(pages[current]?current:'home',null,true); toast('Updated to the latest version.');
+      pages=b.pages; document.getElementById('stamp').textContent='Updated '+b.built;
+      // Never interrupt a running tool; the update shows up on the next page you open.
+      if(!busy()) show(pages[current]?current:'home',null,{noPush:true,state:snap()}); toast('Updated to the latest version.');
     }catch(e){}
   });
   document.getElementById('home').onclick=function(){stack=[];show('home');};
   document.getElementById('themeBtn').onclick=function(){ var n={auto:'light',light:'dark',dark:'auto'}[theme()]; setTheme(n);
-    toast(n==='auto'?'Theme: matches your phone':'Theme: '+(n==='light'?'Light':'Dark')); if(pages) show(current,null,true); };
-  document.getElementById('back').onclick=function(){ if(stack.length>1){stack.pop(); show(stack[stack.length-1],null,true);} };
+    toast(n==='auto'?'Theme: matches your phone':'Theme: '+(n==='light'?'Light':'Dark')); themeFrame(); };
+  document.getElementById('back').onclick=function(){ if(stack.length>1){ stack.pop(); var top=stack[stack.length-1]; show(top.n,null,{noPush:true,state:top.s}); } };
 
   document.getElementById('form').addEventListener('submit',async function(e){
     e.preventDefault(); var err=document.getElementById('err'); err.textContent='Unlocking…';
