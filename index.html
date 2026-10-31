@@ -167,7 +167,7 @@ iframe{flex:1;width:100%;border:0;background:var(--bg)}
     document.getElementById('back').hidden = stack.length<2;
     // Back is the main control. Home shows up once you're two or more pages in (pages link to each other).
     document.getElementById('home').hidden = stack.length<3;
-    var bar=document.getElementById('bar'); if(name!=='home'&&p.accent){ bar.classList.add('tinted'); bar.style.setProperty('--pa',p.accent); } else bar.classList.remove('tinted');
+    var barEl=document.getElementById('bar'); if(name!=='home'&&p.accent){ barEl.classList.add('tinted'); barEl.style.setProperty('--pa',p.accent); } else barEl.classList.remove('tinted');
     document.getElementById('title').textContent = name==='home' ? 'Field Notes' : p.title; bar();
     history.replaceState(null,'','#'+name);
   }
