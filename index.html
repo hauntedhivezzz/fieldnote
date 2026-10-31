@@ -313,8 +313,8 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
   function buildIdx(){ IDX=[]; Object.keys(pages).forEach(function(k){ if(k==='home') return; var I=info(k), d=I.doc;
       [].forEach.call(d.querySelectorAll('script,style,.printcard,img,svg'),function(x){ x.remove(); });
       [].forEach.call(d.querySelectorAll('p,li,h1,h2,h3,h4,td,th,div,summary,dt,dd,figcaption,br,b,strong'),function(x){ x.append(' '); });
-      var add=function(id,t,el){ var tx=(el?el.textContent:'').replace(/\s+/g,' ').trim(); IDX.push({n:k,id:id,t:t,tx:tx,lt:(pages[k].title+' '+t).toLowerCase(),lx:tx.toLowerCase()}); };
-      if(I.secs.length) I.secs.forEach(function(s){ add(s.id,s.t,d.getElementById(s.id)); });
+      var add=function(id,t,el,key){ var tx=(el?el.textContent:'').replace(/\s+/g,' ').trim(); IDX.push({n:k,id:id,t:t,tx:tx,lt:(pages[k].title+' '+t+' '+(key||'')).toLowerCase(),lx:tx.toLowerCase()}); };
+      if(I.secs.length) I.secs.forEach(function(s){ add(s.id,s.t,d.getElementById(s.id),s.k); });
       else if(I.heads&&I.heads.length){ var hs=d.querySelectorAll('main h2, .mdoc h2'); [].forEach.call(hs,function(h,i){ var tx=''; for(var n=h.nextElementSibling;n&&n.tagName!=='H2';n=n.nextElementSibling) tx+=' '+n.textContent; IDX.push({n:k,id:I.heads[i].id,t:I.heads[i].t,tx:tx.replace(/\s+/g,' ').trim(),lt:(pages[k].title+' '+I.heads[i].t).toLowerCase(),lx:tx.toLowerCase()}); }); }
       else add('',pages[k].title,d.body); }); }
   function hl(s,ws){ s=esc(s); ws.forEach(function(w){ if(w.length<2) return; var e=w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); s=s.replace(new RegExp(w.length<=3?'\\b('+e+')\\b':'('+e+')','ig'),'<mark>$1</mark>'); }); return s; }
@@ -323,7 +323,7 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
     // Short words ("co", "aqi") match whole words only, so "co" doesn't hit "EcoFlow". Titles count most.
     var rx=ws.map(function(w){ var e=w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); return new RegExp(w.length<=3?'\\b'+e+'\\b':e,'g'); });
     var hits=IDX.map(function(e){ var sc=0; for(var i=0;i<rx.length;i++){ rx[i].lastIndex=0; var t=(e.lt.match(rx[i])||[]).length, b=(e.lx.match(rx[i])||[]).length; if(!t&&!b) return null; sc+=t*20+Math.min(b,6); }
-      return [sc,e]; }).filter(Boolean).sort(function(a,b){ return b[0]-a[0]; }).slice(0,40);
+      if(/^(sources|more)$/.test(e.id)) sc=sc/4; return [sc,e]; }).filter(Boolean).sort(function(a,b){ return b[0]-a[0]; }).slice(0,40);
     if(!hits.length){ out.innerHTML='<p class="note">Nothing found for "'+esc(q)+'".</p>'; return; }
     out.innerHTML='<div class="list">'+hits.map(function(h){ var e=h[1], mm=rx[0].exec(e.lx), i=(rx[0].lastIndex=0, mm?mm.index:-1), sn=i<0?e.tx.slice(0,110):(i>50?'…':'')+e.tx.slice(Math.max(0,i-50),i+90)+'…';
       return '<button type="button" class="row" data-go="'+esc(e.n+(e.id?'#'+e.id:''))+'"><span class="tx">'+hl(e.t,ws)+'<small>'+esc(pages[e.n].title)+' · '+hl(sn,ws)+'</small></span><span class="go">'+CH+'</span></button>'; }).join('')+'</div>'; }
