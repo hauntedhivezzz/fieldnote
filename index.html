@@ -27,19 +27,19 @@ label.rem input{width:22px;height:22px}
 button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-radius:14px;background:var(--acc);color:#fff}
 .err{color:#c0392b;font-size:14px;min-height:1.2em;margin-top:10px}
 #app{display:none;height:100%;flex-direction:column}
-#bar{display:flex;align-items:center;gap:6px;padding:calc(env(safe-area-inset-top) + 4px) 8px 4px;background:var(--card);border-bottom:1px solid var(--line)}
-#bar button{flex:none;width:48px;height:48px;display:grid;place-items:center;background:none;border:0;border-radius:14px;color:var(--ink);padding:0}
+/* One row: back + home on the left, title centered, theme on the right. Side columns are equal so the title is truly centered. */
+#bar{display:grid;grid-template-columns:96px minmax(0,1fr) 96px;align-items:center;min-height:52px;padding:env(safe-area-inset-top) 6px 0;background:var(--card);border-bottom:1px solid var(--line)}
+#left,#right{display:flex;align-items:center;height:48px}
+#right{justify-content:flex-end}
+#bar button{flex:none;width:44px;height:44px;display:grid;place-items:center;background:none;border:0;border-radius:12px;color:var(--ink);padding:0}
 #bar button:active{background:var(--press)}
-#bar button svg{width:27px;height:27px}
+#bar button svg{width:26px;height:26px;display:block}
 #bar button[hidden]{display:none}
-#mid{flex:1;min-width:0;text-align:center;line-height:1.15}
-#title{display:block;font-weight:650;font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#stamp{display:block;white-space:nowrap;font-size:12px;color:var(--muted);background:none;border:0;padding:0;margin:0 auto;font:inherit;font-size:12px;line-height:1.3}
+#title{margin:0;text-align:center;font-weight:650;font-size:17px;line-height:48px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#bar button#stamp{width:auto;height:36px;padding:0 10px;border-radius:999px;border:1px solid var(--line);font:inherit;font-size:13px;font-weight:600;white-space:nowrap;color:var(--muted)}
 #stamp.ok{color:#2e6b34} #stamp.warn{color:#8a5a00}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #stamp.ok{color:#8fd19a} :root:not([data-theme="light"]) #stamp.warn{color:#f2c46b}}
 :root[data-theme="dark"] #stamp.ok{color:#8fd19a} :root[data-theme="dark"] #stamp.warn{color:#f2c46b}
-button#stamp{min-height:24px;cursor:pointer;text-decoration:underline;text-decoration-color:var(--line);text-underline-offset:3px}
-button#stamp:disabled{text-decoration:none;cursor:default;color:var(--muted);opacity:1}
 #sheet{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--card);border-top:1px solid var(--line);border-radius:18px 18px 0 0;padding:18px 18px calc(env(safe-area-inset-bottom) + 18px);box-shadow:0 -8px 30px rgba(0,0,0,.25);font-size:15px}
 #sheet h2{margin:0 0 8px;font-size:18px} #sheet ul{margin:6px 0 12px;padding-left:0;list-style:none} #sheet li{margin:4px 0}
 #sheet button{width:100%;min-height:48px;border:0;border-radius:14px;background:var(--acc);color:#fff;font:inherit;font-weight:600}
@@ -61,7 +61,7 @@ iframe{flex:1;width:100%;border:0;background:var(--bg)}
   </form>
 </div>
 <div id="app">
-  <div id="bar"><button id="back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><button id="home" aria-label="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg></button><div id="mid"><span id="title"></span><button type="button" id="stamp"></button></div><button id="themeBtn" aria-label="Light or dark"></button></div>
+  <div id="bar"><div id="left"><button id="back" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button><button id="home" aria-label="Home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/></svg></button><button type="button" id="stamp" hidden></button></div><h1 id="title"></h1><div id="right"><button id="themeBtn" aria-label="Light or dark"></button></div></div>
   <iframe id="view" title="Page"></iframe>
 </div>
 <div id="toast"></div>
@@ -128,17 +128,17 @@ iframe{flex:1;width:100%;border:0;background:var(--bg)}
     try{ var c=await caches.open('prep-v2'); var a=await c.match('index.html'), b=await c.match('data.bin',{ignoreSearch:true}); r.files=!!(a&&b); }catch(e){}
     r.ok=r.sw&&r.files&&r.pages; ready=r; bar(); return r;
   }
+  // Home only: a small offline status chip where Back would be. Tap for details.
   function bar(){ var s=document.getElementById('stamp');
-    if(current!=='home'){ s.textContent='Field Notes'; s.className=''; s.disabled=true; s.removeAttribute('aria-label'); return; }
-    s.disabled=false;
-    if(!ready){ s.textContent='Checking offline…'; s.className=''; return; }
-    s.textContent= ready.ok ? '✓ Ready offline' : '⚠︎ Not fully offline yet'; s.className= ready.ok ? 'ok' : 'warn';
-    s.setAttribute('aria-label', s.textContent+'. Show details'); }
+    s.hidden = current!=='home'; if(s.hidden) return;
+    if(!ready){ s.textContent='…'; s.className=''; s.setAttribute('aria-label','Checking offline'); return; }
+    s.textContent= ready.ok ? '✓ Offline' : '⚠︎ Offline?'; s.className= ready.ok ? 'ok' : 'warn';
+    s.setAttribute('aria-label', (ready.ok?'Ready offline':'Not fully offline yet')+'. Show details'); }
   function sheet(){ var r=ready||{}, el=document.getElementById('sheet');
     var li=function(ok,t){ return '<li>'+(ok?'✓ ':'✗ ')+t+'</li>'; };
     el.innerHTML='<h2 id="sheetH">'+(r.ok?'Ready offline':'Not fully offline yet')+'</h2><ul>'+
       li(r.sw,'App saved on this phone (works in airplane mode)')+li(r.files,'Encrypted pages saved on this phone')+
-      li(r.pages,(r.n||0)+' pages unlocked'+(built?', updated '+built:''))+'</ul>'+
+      li(r.pages,(r.n||0)+' pages unlocked'+(built?', '+built:''))+'</ul>'+
       (r.ok?'':'<p>Open the app once with internet and leave it open for a few seconds, then check again.</p>')+
       '<p style="color:var(--muted)"><b>Mac and ES_BACKUP only:</b> PDF books and manuals, the Kiwix library, movies, the full map. The PDFs you set up in Files and Kiwix on the phone are separate apps.</p>'+
       '<button type="button" id="sheetX">Close</button>';
