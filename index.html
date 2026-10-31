@@ -147,7 +147,7 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
     "function sh(e){return(e.getAttribute('data-chip')||ttl(e)).trim();}"+
     "function key(e){var k=e.querySelector('summary .key');return k?k.textContent.trim():'';}"+
     "var CH='"+CH.replace(/'/g,"\\'")+"';"+
-    "function openTo(id){var t=document.getElementById(id);if(!t)return;for(var n=t;n;n=n.parentElement){if(n.tagName==='DETAILS')n.open=true;}setTimeout(function(){t.scrollIntoView({block:'start'});},40);}"+
+    "function openTo(id){var t=document.getElementById(id);if(!t)return;for(var n=t;n;n=n.parentElement){if(n.tagName==='DETAILS')n.open=true;}setTimeout(function(){var r=document.documentElement,b=r.style.scrollBehavior;r.style.scrollBehavior='auto';t.scrollIntoView({block:'start'});r.style.scrollBehavior=b;},40);}"+
     "document.addEventListener('DOMContentLoaded',function(){var R=document.documentElement,S=secs(),M=document.querySelector('main.wrap');"+
     // Pages without sections (Markdown pages): give each heading an id so Contents can jump to it.
     "if(!S.length)[].forEach.call(document.querySelectorAll('main h2, .mdoc h2'),function(h,i){if(!h.id)h.id='fnh'+i;});"+
@@ -237,13 +237,13 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
     if(old&&dir==='pop'){ stage.insertBefore(f,old); } else stage.appendChild(f);
     var done=false;
     f.onload=function(){ if(done) return; done=true; if(en.s) restore(f,en.s);
-      cur=f; var kill=function(){ if(old&&old.parentNode) old.remove(); f.classList.remove('under'); busyNav=false; };
+      cur=f; var kill=function(){ if(old&&old.parentNode) old.remove(); f.classList.remove('under'); busyNav=false; }; setTimeout(kill,450);
       if(!old||dir==='none'||calm||!f.animate){ kill(); return; }
       var E={duration:330,easing:'cubic-bezier(.2,.8,.2,1)'};
       if(dir==='push'){ old.classList.add('under'); old.animate([{transform:'none'},{transform:'translateX(-28%)'}],E); f.animate([{transform:'translateX(100%)'},{transform:'none'}],E).onfinish=kill; }
       else { f.classList.add('under'); f.animate([{transform:'translateX(-28%)'},{transform:'none'}],E); old.animate([{transform:'none'},{transform:'translateX(100%)'}],E).onfinish=kill; }
     };
-    busyNav=true; setTimeout(function(){ busyNav=false; },900);
+    busyNav=true; setTimeout(function(){ busyNav=false; },700);
     f.srcdoc=inject(p.html,o);
     chrome();
   }
@@ -266,7 +266,10 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
     // Already here: just scroll.
     if(top&&top.n===en.n&&(top.sec||'')===(en.sec||'')){ if(en.h){ var v=frame(); if(v.w) v.w.postMessage({fnJump:en.h},'*'); } return; }
     remember();
-    if(opt.replace&&stack.length>1) stack[stack.length-1]=en; else stack.push(en);
+    if(opt.replace&&stack.length>1) stack[stack.length-1]=en;
+    else { // Arriving at a section from elsewhere: put the guide's list under it, so Back lands there.
+      if(en.sec&&(!top||top.n!==name)) stack.push({n:name});
+      stack.push(en); }
     render(opt.dir||'push'); }
   function goHome(){ if(stack.length===1&&stack[0].n==='home') { var v=frame(); if(v.w) v.w.scrollTo({top:0,behavior:'smooth'}); return; }
     remember(); stack=[{n:'home'}]; render(cur?'pop':'none'); }
