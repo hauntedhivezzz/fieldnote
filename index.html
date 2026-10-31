@@ -150,7 +150,9 @@ iframe{flex:1;width:100%;border:0;background:var(--bg)}
     if(t==='auto') r.removeAttribute('data-theme'); else r.setAttribute('data-theme',t); }
   function show(name,hash,opt){
     opt=opt||{}; var p=pages[name]; if(!p){toast('That page is not in the phone app.');return;}
-    if(!opt.noPush){ remember(); if(!stack.length||stack[stack.length-1].n!==name) stack.push({n:name}); }
+    // Home is the top: arriving there starts a fresh Back history, so Back never sits next to the offline chip.
+    if(name==='home') stack=[];
+    if(!opt.noPush||name==='home'){ remember(); if(!stack.length||stack[stack.length-1].n!==name) stack.push({n:name}); }
     current=name;
     var f=document.getElementById('view');
     f.onload=function(){ var d=f.contentDocument;
