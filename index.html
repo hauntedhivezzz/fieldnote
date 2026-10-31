@@ -37,7 +37,7 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
 #bar button{flex:none;width:44px;height:44px;display:grid;place-items:center;background:none;border:0;border-radius:12px;color:var(--ink);padding:0}
 #bar button:active{background:var(--press)}
 #bar button svg{width:26px;height:26px;display:block}
-#bar button[hidden]{display:none}
+#bar button[hidden],#bar button#back[hidden]{display:none}
 #bar button#back{width:auto;max-width:100%;display:flex;align-items:center;gap:0;padding:0 8px 0 0;font:inherit;font-size:16px}
 #back span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #title{margin:0;max-width:52vw;text-align:center;font-weight:700;font-size:19px;letter-spacing:-.01em;line-height:56px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}
@@ -264,7 +264,7 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
     var top=stack[stack.length-1], en={n:name};
     if(split(name)&&hash){ en.sec=secOf(name,hash)||''; if(en.sec&&hash!==en.sec) en.h=hash; if(!en.sec) en.h=hash; } else if(hash) en.h=hash;
     // Already here: just scroll.
-    if(top&&top.n===en.n&&(top.sec||'')===(en.sec||'')&&en.h){ var v=frame(); if(v.w) v.w.postMessage({fnJump:en.h},'*'); return; }
+    if(top&&top.n===en.n&&(top.sec||'')===(en.sec||'')){ if(en.h){ var v=frame(); if(v.w) v.w.postMessage({fnJump:en.h},'*'); } return; }
     remember();
     if(opt.replace&&stack.length>1) stack[stack.length-1]=en; else stack.push(en);
     render(opt.dir||'push'); }
