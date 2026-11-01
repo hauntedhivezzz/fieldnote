@@ -170,8 +170,8 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
     "else if(O.h){openTo(O.h);}"+
     "});"+
     "window.addEventListener('message',function(ev){var d=ev.data||{};if(d.fnJump)openTo(d.fnJump);if(d.fnImgs)[].forEach.call(document.querySelectorAll('img[data-pimg]:not([src])'),function(im){var u=d.fnImgs[im.getAttribute('data-pimg')];if(u)im.src=u;});});"+
-    // Photo rows load their pictures from the app only when opened.
-    "document.addEventListener('toggle',function(ev){var t=ev.target;if(!t.classList||!t.classList.contains('pics')||!t.open)return;var n=[].map.call(t.querySelectorAll('img[data-pimg]:not([src])'),function(i){return i.getAttribute('data-pimg');});if(n.length)post({fnImg:n});},true);"+
+    // Photo rows and photo cards load their pictures from the app only when their section opens.
+    "document.addEventListener('toggle',function(ev){var t=ev.target;if(t.tagName!=='DETAILS'||!t.open)return;var n=[].map.call(t.querySelectorAll('img[data-pimg]:not([src])'),function(i){return i.getAttribute('data-pimg');});if(n.length)post({fnImg:n});},true);"+
     // Swipe in from the left edge = Back.
     "var sx=null,sy=0;document.addEventListener('touchstart',function(e){var t=e.touches[0];sx=t.clientX<26?t.clientX:null;sy=t.clientY;},{passive:true});"+
     "document.addEventListener('touchend',function(e){if(sx==null)return;var t=e.changedTouches[0];if(t.clientX-sx>70&&Math.abs(t.clientY-sy)<70)post({fnBack:1});sx=null;},{passive:true});"+
