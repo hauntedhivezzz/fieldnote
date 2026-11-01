@@ -257,13 +257,13 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
     back.hidden=!prev; if(prev){ var l=prev.n==='home'?'Home':titleOf(prev); if(l.length>12) l='Back'; document.getElementById('backLbl').textContent=l; back.setAttribute('aria-label','Back to '+l); }
     var barEl=document.getElementById('bar'); if(!home&&p.accent){ barEl.classList.add('tinted'); barEl.style.setProperty('--pa',p.accent); } else barEl.classList.remove('tinted');
     var t=document.getElementById('title'); t.textContent=titleOf(en); t.setAttribute('aria-label', home?'Field Notes':titleOf(en)+'. Go to Home');
-    [].forEach.call(document.querySelectorAll('#tabs button'),function(b){ var k=b.getAttribute('data-tab'); b.classList.toggle('on',(k==='home'&&home)||(k==='kit'&&en.n==='inventory')); });
+    [].forEach.call(document.querySelectorAll('#tabs button'),function(b){ var k=b.getAttribute('data-tab'); b.classList.toggle('on',(k==='home'&&home)||(k==='kit'&&!!KITS[en.n])); });
     stampChip(); history.replaceState(null,'','#'+en.n+(en.sec?'/'+en.sec:''));
   }
   function remember(){ var top=stack[stack.length-1]; if(top) top.s=snap(); }
   // Go to a page (and a spot in it). On a split guide, a spot opens the section screen that holds it.
   var PICS={cpr:'medical',aed:'medical',choking:'medical',bleeding:'medical',recovery:'medical',earthquake:'earthquake',smoke:'smoke',generator:'power',toilet:'sanitation'};
-  function go(name,hash,opt){ opt=opt||{}; if(name==='pictures'){ var k=PICS[hash]?hash:'cpr'; name=PICS[k]; hash='pic-'+k; }
+  function go(name,hash,opt){ opt=opt||{}; if(name==='fieldtools') name='numbers'; if(name==='pictures'){ var k=PICS[hash]?hash:'cpr'; name=PICS[k]; hash='pic-'+k; }
     if(!pages[name]){ toast('That page is not in the phone app.'); return; }
     if(name==='home'){ goHome(); return; }
     var top=stack[stack.length-1], en={n:name};
@@ -292,7 +292,8 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
   sheetEl.addEventListener('click',function(e){ var b=e.target.closest('[data-go]'); if(!b) return;
     var g=b.getAttribute('data-go').split('#'); closeSheet();
     if(b.hasAttribute('data-sec')){ var top=stack[stack.length-1]; go(g[0],g[1],{replace:!!top.sec}); } else go(g[0],g[1]||''); });
-  var ORDER=[['Guides',['medical','outage','earthquake','power','water','food','smoke','sanitation','radio','cece']],['My kit',['inventory','shopping','todo','supplies','fieldtools','iphone','movies']]];
+  var ORDER=[['Guides',['medical','outage','earthquake','power','water','food','smoke','sanitation','radio','cece','numbers']],['My kit',['kit','inventory','shopping','todo','supplies','library','iphone','movies']]];
+  var KITS={kit:1,inventory:1,shopping:1,todo:1,supplies:1,library:1,iphone:1,movies:1};
   function row(target,t,k,curOn,isSec){ return '<button type="button" class="row'+(curOn?' cur':'')+'" data-go="'+esc(target)+'"'+(isSec?' data-sec':'')+'><span class="tx">'+esc(t)+(k?'<small>'+esc(k)+'</small>':'')+'</span><span class="go">'+CH+'</span></button>'; }
   function allGuides(){ return ORDER.map(function(g){ var r=g[1].filter(function(k){return pages[k];}).map(function(k){ return row(k,pages[k].title,'',false); }).join('');
     return r?'<div class="grp">'+g[0]+'</div><div class="list">'+r+'</div>':''; }).join(''); }
@@ -309,7 +310,7 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
     } else body='<div class="list">'+list.map(function(s){ return row(en.n+'#'+s.id,s.t,s.k,false); }).join('')+'</div>';
     body+='<div class="grp">Other guides</div><div class="list">'+row('home','All guides','Back to the home screen',false)+'</div>';
     openSheet(p.title,body); }
-  var SOS=[['medical#cpr','CPR','Not breathing normally'],['medical#choke','Choking',''],['medical#bleed','Bad bleeding',''],
+  var SOS=[['numbers','Phone numbers','911, poison control, gas, power, vet'],['medical#cpr','CPR','Not breathing normally'],['medical#choke','Choking',''],['medical#bleed','Bad bleeding',''],
     ['power#safety','Carbon monoxide','Alarm, headache, dizziness near a heater'],['outage#first','Power or internet out','The first 15 minutes'],['earthquake#during','Earthquake','During and the first hour'],
     ['smoke#aqi','Wildfire smoke','Air quality and what to do'],['cece#urgent','Cece emergency','Warning signs: get to a vet']];
   function sos(){ var r=SOS.filter(function(x){ return pages[x[0].split('#')[0]]; }).map(function(x){ return row(x[0],x[1],x[2],false); }).join('');
@@ -386,7 +387,7 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
   document.getElementById('title').onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); this.onclick(); } };
   document.getElementById('back').onclick=back;
   document.getElementById('tabs').addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b) return; var k=b.getAttribute('data-tab');
-    if(k==='home'){ closeSheet(); goHome(); } else if(k==='kit'){ closeSheet(); if(stack[stack.length-1].n!=='inventory') go('inventory'); }
+    if(k==='home'){ closeSheet(); goHome(); } else if(k==='kit'){ closeSheet(); if(stack[stack.length-1].n!=='kit') go('kit'); }
     else if(k==='toc') contents(); else if(k==='search') search(); else if(k==='sos') sos(); });
   document.addEventListener('keydown',function(e){ if(e.key==='Escape') closeSheet(); });
   document.getElementById('themeBtn').onclick=function(){ var n={auto:'light',light:'dark',dark:'auto'}[theme()]; setTheme(n);
