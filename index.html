@@ -292,7 +292,7 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
   sheetEl.addEventListener('click',function(e){ var b=e.target.closest('[data-go]'); if(!b) return;
     var g=b.getAttribute('data-go').split('#'); closeSheet();
     if(b.hasAttribute('data-sec')){ var top=stack[stack.length-1]; go(g[0],g[1],{replace:!!top.sec}); } else go(g[0],g[1]||''); });
-  var ORDER=[['Guides',['medical','outage','earthquake','power','water','food','smoke','heat','sanitation','radio','cece','numbers']],['My kit',['kit','inventory','shopping','todo','supplies','library','iphone','movies']]];
+  var ORDER=[['Guides',['medical','outage','earthquake','power','water','food','foraging','smoke','heat','sanitation','radio','cece','numbers']],['My kit',['kit','inventory','shopping','todo','supplies','library','iphone','movies']]];
   var KITS={kit:1,inventory:1,shopping:1,todo:1,supplies:1,library:1,iphone:1,movies:1};
   function row(target,t,k,curOn,isSec){ return '<button type="button" class="row'+(curOn?' cur':'')+'" data-go="'+esc(target)+'"'+(isSec?' data-sec':'')+'><span class="tx">'+esc(t)+(k?'<small>'+esc(k)+'</small>':'')+'</span><span class="go">'+CH+'</span></button>'; }
   function allGuides(){ return ORDER.map(function(g){ var r=g[1].filter(function(k){return pages[k];}).map(function(k){ return row(k,pages[k].title,'',false); }).join('');
