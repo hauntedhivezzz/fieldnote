@@ -292,7 +292,7 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
   sheetEl.addEventListener('click',function(e){ var b=e.target.closest('[data-go]'); if(!b) return;
     var g=b.getAttribute('data-go').split('#'); closeSheet();
     if(b.hasAttribute('data-sec')){ var top=stack[stack.length-1]; go(g[0],g[1],{replace:!!top.sec}); } else go(g[0],g[1]||''); });
-  var ORDER=[['Guides',['medical','outage','earthquake','power','water','food','smoke','sanitation','radio','cece','numbers']],['My kit',['kit','inventory','shopping','todo','supplies','library','iphone','movies']]];
+  var ORDER=[['Guides',['medical','outage','earthquake','power','water','food','smoke','heat','sanitation','radio','cece','numbers']],['My kit',['kit','inventory','shopping','todo','supplies','library','iphone','movies']]];
   var KITS={kit:1,inventory:1,shopping:1,todo:1,supplies:1,library:1,iphone:1,movies:1};
   function row(target,t,k,curOn,isSec){ return '<button type="button" class="row'+(curOn?' cur':'')+'" data-go="'+esc(target)+'"'+(isSec?' data-sec':'')+'><span class="tx">'+esc(t)+(k?'<small>'+esc(k)+'</small>':'')+'</span><span class="go">'+CH+'</span></button>'; }
   function allGuides(){ return ORDER.map(function(g){ var r=g[1].filter(function(k){return pages[k];}).map(function(k){ return row(k,pages[k].title,'',false); }).join('');
@@ -312,7 +312,7 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
     openSheet(p.title,body); }
   var SOS=[['numbers','Phone numbers','911, poison control, gas, power, vet'],['medical#cpr','CPR','Not breathing normally'],['medical#choke','Choking',''],['medical#bleed','Bad bleeding',''],
     ['power#safety','Carbon monoxide','Alarm, headache, dizziness near a heater'],['outage#first','Power or internet out','The first 15 minutes'],['earthquake#during','Earthquake','During and the first hour'],
-    ['smoke#aqi','Wildfire smoke','Air quality and what to do'],['cece#urgent','Cece emergency','Warning signs: get to a vet']];
+    ['smoke#aqi','Wildfire smoke','Air quality and what to do'],['heat#heatwave','Heat wave','Cool down; heat stroke signs'],['cece#urgent','Cece emergency','Warning signs: get to a vet']];
   function sos(){ var r=SOS.filter(function(x){ return pages[x[0].split('#')[0]]; }).map(function(x){ return row(x[0],x[1],x[2],false); }).join('');
     openSheet('Emergency','<button type="button" class="call911" id="c911"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>Call 911</button><div class="list">'+r+'</div>');
     document.getElementById('c911').onclick=function(){ location.href='tel:911'; }; }
