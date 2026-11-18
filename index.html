@@ -176,7 +176,7 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
     "var sx=null,sy=0;document.addEventListener('touchstart',function(e){var t=e.touches[0];sx=t.clientX<26?t.clientX:null;sy=t.clientY;},{passive:true});"+
     "document.addEventListener('touchend',function(e){if(sx==null)return;var t=e.changedTouches[0];if(t.clientX-sx>70&&Math.abs(t.clientY-sy)<70)post({fnBack:1});sx=null;},{passive:true});"+
     "})();<\/script>";
-  function head(o){ return "<script>try{var t=JSON.parse(localStorage.getItem('ft.theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}window.FN="+JSON.stringify(o).replace(/</g,'\\u003c')+";<\/script>"+PAGE_CSS+PAGE_JS; }
+  function head(o){ return "<meta name=\"color-scheme\" content=\"light dark\"><script>try{var t=JSON.parse(localStorage.getItem('ft.theme'));if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}window.FN="+JSON.stringify(o).replace(/</g,'\\u003c')+";<\/script>"+PAGE_CSS+PAGE_JS; }
   function inject(html,o){ var H=head(o); return /<head[^>]*>/i.test(html) ? html.replace(/<head[^>]*>/i, function(m){return m+H;}) : H+html; }
   setTheme(theme());
   function b64(buf){return btoa(String.fromCharCode.apply(null,new Uint8Array(buf)));}
@@ -237,9 +237,10 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
     var en=stack[stack.length-1], p=pages[en.n]; if(!p){ toast('That page is not in the phone app.'); return; }
     var o={page:en.n, mode: en.sec?'sec':(split(en.n)?'list':'page'), sec:en.sec||'', h:en.h||'', groups:(p.nav&&p.nav.groups)||[]};
     var stage=document.getElementById('stage'), old=cur, f=document.createElement('iframe'); f.title=titleOf(en)||'Page';
+    f.style.visibility='hidden';   // A blank frame paints white before its page loads; stay hidden until it's ready (no white flash in dark mode).
     if(old&&dir==='pop'){ stage.insertBefore(f,old); } else stage.appendChild(f);
     var done=false;
-    f.onload=function(){ if(done) return; done=true; if(en.s) restore(f,en.s);
+    f.onload=function(){ if(done) return; done=true; f.style.visibility=''; if(en.s) restore(f,en.s);
       cur=f; var kill=function(){ if(old&&old.parentNode) old.remove(); f.classList.remove('under'); busyNav=false; }; setTimeout(kill,450);
       if(!old||dir==='none'||calm||!f.animate){ kill(); return; }
       var E={duration:330,easing:'cubic-bezier(.2,.8,.2,1)'};
