@@ -14,6 +14,7 @@
 <style>
 :root{--bg:#f5f5f2;--card:#fff;--ink:#15191d;--muted:#5d6670;--line:#e4e1da;--acc:#2f5d7c;--press:#ecebe6;--sos:#b3261e;color-scheme:light}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#121518;--card:#1b1f24;--ink:#ebe8e2;--muted:#a2aab2;--line:#2c3238;--acc:#7fb0d4;--press:#262b31;--sos:#ff8a80;color-scheme:dark}}
+#sheet .call911{background:#b3261e!important;color:#fff}
 :root[data-theme="dark"]{--bg:#121518;--card:#1b1f24;--ink:#ebe8e2;--muted:#a2aab2;--line:#2c3238;--acc:#7fb0d4;--press:#262b31;--sos:#ff8a80;color-scheme:dark}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:17px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif}
@@ -186,7 +187,7 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
   function unb64(s){var b=atob(s),a=new Uint8Array(b.length);for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return a;}
   function toast(t){var el=document.getElementById('toast');el.textContent=t;el.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(function(){el.classList.remove('on');},2600);}
   function get(k){try{return localStorage.getItem(k);}catch(e){return null;}}
-  function put(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v);}catch(e){}}
+  function put(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v);return true;}catch(e){return false;}}
 
   async function fetchData(){
     var m=null;
@@ -210,7 +211,7 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
   async function unlockWith(key,data,remember){
     var bundle=await decrypt(key,data);
     pages=bundle.pages; imgs=bundle.imgs||{}; liveKey=key; parsed={};
-    if(remember){ put(KEYSTORE, JSON.stringify({salt:meta.salt,k:b64(await crypto.subtle.exportKey('raw',key))})); }
+    if(remember){ if(!put(KEYSTORE, JSON.stringify({salt:meta.salt,k:b64(await crypto.subtle.exportKey('raw',key))}))) toast("This phone couldn't remember the password."); }
     document.getElementById('lock').style.display='none';
     document.getElementById('app').style.display='flex';
     built=bundle.built; checkOffline(); if(navigator.serviceWorker&&navigator.serviceWorker.ready) navigator.serviceWorker.ready.then(function(){ setTimeout(checkOffline,1500); });
@@ -294,11 +295,14 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
   var sheetEl=document.getElementById('sheet'), scrim=document.getElementById('scrim'), lastFocus=null;
   function openSheet(title,body,opt){ opt=opt||{}; lastFocus=document.activeElement;
     sheetEl.className=opt.tall?'tall':''; sheetEl.innerHTML='<div class="grab"></div><div class="sh-head">'+(opt.headHTML||'<h2 id="sheetH">'+esc(title)+'</h2>')+'<button type="button" class="sh-x">'+(opt.x||'Done')+'</button></div><div class="sh-body">'+body+'</div>';
-    sheetEl.hidden=false; scrim.hidden=false; sheetEl.querySelector('.sh-x').onclick=closeSheet;
+    sheetEl.hidden=false; scrim.hidden=false; document.getElementById('app').inert=true; sheetEl.querySelector('.sh-x').onclick=closeSheet;
     if(!calm&&sheetEl.animate) sheetEl.animate([{transform:'translateY(100%)'},{transform:'none'}],{duration:260,easing:'cubic-bezier(.2,.8,.2,1)'});
     var f=sheetEl.querySelector(opt.focus||'.sh-x'); if(f) f.focus(); }
-  function closeSheet(){ if(sheetEl.hidden) return; sheetEl.hidden=true; scrim.hidden=true; sheetEl.innerHTML=''; if(lastFocus&&lastFocus.focus) lastFocus.focus(); }
+  function closeSheet(){ if(sheetEl.hidden) return; document.getElementById('app').inert=false; sheetEl.hidden=true; scrim.hidden=true; sheetEl.innerHTML=''; if(lastFocus&&lastFocus.focus) lastFocus.focus(); }
   scrim.onclick=closeSheet;
+  sheetEl.addEventListener('keydown',function(e){ if(e.key==='Escape'){ closeSheet(); return; } if(e.key!=='Tab') return;
+    var f=[].filter.call(sheetEl.querySelectorAll('button,a[href],input,select,textarea'),function(x){ return !x.disabled&&x.offsetParent!==null; }); if(!f.length) return;
+    var a=f[0], z=f[f.length-1]; if(e.shiftKey&&document.activeElement===a){ e.preventDefault(); z.focus(); } else if(!e.shiftKey&&document.activeElement===z){ e.preventDefault(); a.focus(); } });
   sheetEl.addEventListener('click',function(e){ var b=e.target.closest('[data-go]'); if(!b) return;
     var g=b.getAttribute('data-go').split('#'); closeSheet();
     if(b.hasAttribute('data-sec')){ var top=stack[stack.length-1]; go(g[0],g[1],{replace:!!top.sec}); } else go(g[0],g[1]||''); });
@@ -366,18 +370,21 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
       li(r.sw,'App saved on this phone (works in airplane mode)')+li(r.files,'Encrypted pages saved on this phone')+
       li(r.pages,(r.n||0)+' pages unlocked'+(built?', '+built:''))+'</ul>'+
       (r.ok?'':'<p class="note">Open the app once with internet and leave it open for a few seconds, then check again.</p>')+
-      '<p class="note"><b>Mac and ES_BACKUP only:</b> PDF books and manuals, the Kiwix library, movies, the full map. The PDFs you set up in Files and Kiwix on the phone are separate apps.</p>'); }
+      '<p class="note"><b>Mac and ES_BACKUP only:</b> PDF books and manuals, the Kiwix library, movies, the full map. The PDFs you set up in Files and Kiwix on the phone are separate apps.</p>'+
+      '<div class="list"><button type="button" class="row" id="forgetBtn"><span class="tx">Lock and forget this phone<small>You will need the password next time.</small></span></button></div>');
+    document.getElementById('forgetBtn').onclick=function(){ put(KEYSTORE,null); location.reload(); }; }
   function busy(){ var v=frame(); return !!(v.d&&v.d.documentElement&&v.d.documentElement.dataset.busy); }
   function themeFrame(){ var v=frame(); if(!v.d||!v.d.documentElement) return; var t=theme(), r=v.d.documentElement;
     if(t==='auto') r.removeAttribute('data-theme'); else r.setAttribute('data-theme',t); }
 
   window.addEventListener('message',function(e){
+    var own=[].some.call(document.querySelectorAll('#stage iframe'),function(f){ return f.contentWindow===e.source; }); if(!own) return;
     var m=e.data||{};
     if(m.fnImg){ var o={}; (m.fnImg||[]).forEach(function(n){ if(imgs[n]) o[n]=imgs[n]; }); try{ e.source.postMessage({fnImgs:o},'*'); }catch(x){} }
     else if(m.fnBack) back();
     else if(m.fnSec){ var top=stack[stack.length-1]; go(top.n,m.fnSec,{replace:!!m.replace}); }
     else if(m.go) go(m.go,m.hash);
-    else if(m.ext){ if(/^tel:|^sms:|^mailto:/.test(m.ext)) location.href=m.ext; else window.open(m.ext,'_blank'); }
+    else if(typeof m.ext==='string'){ if(/^(tel:|sms:|mailto:)/.test(m.ext)) location.href=m.ext; else if(/^https?:/.test(m.ext)) window.open(m.ext,'_blank','noopener'); }
     else if(m.missing) toast('That file is on the Mac and the ES_BACKUP drive, not in the phone app.');
   });
   // When the app comes back to the foreground, pick up any newer version quietly.
@@ -406,7 +413,7 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
   document.getElementById('form').addEventListener('submit',async function(e){
     e.preventDefault(); var err=document.getElementById('err'); err.textContent='Unlocking…';
     try{ var data=await fetchData(); var key=await keyFromPassword(document.getElementById('pw').value);
-      await unlockWith(key,data,document.getElementById('rem').checked); err.textContent=''; }
+      var rem=document.getElementById('rem').checked; await unlockWith(key,data,rem); if(!rem) put(KEYSTORE,null); err.textContent=''; }
     catch(x){ err.textContent = (x && x.name==='OperationError') ? 'Wrong password.' : 'Could not load the app. If you are offline, open it once with internet first.'; }
   });
 
