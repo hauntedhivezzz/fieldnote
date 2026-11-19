@@ -189,8 +189,14 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
   function put(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v);}catch(e){}}
 
   async function fetchData(){
-    var r1=await fetch('version.json',{cache:'no-cache'}); meta=await r1.json();
-    var r2=await fetch('data.bin?v='+meta.version); return new Uint8Array(await r2.arrayBuffer());
+    var m=null;
+    try{ var r1=await fetch('version.json',{cache:'no-cache'}); if(r1.ok){ m=await r1.json(); } }catch(e){}
+    if(m&&m.salt&&m.iter){ put('fn.meta',JSON.stringify(m)); }
+    else { try{ m=JSON.parse(get('fn.meta')); }catch(e){ m=null; } }
+    if(!m||!m.salt||!m.iter) throw new Error('App details are not saved on this phone yet.');
+    meta=m;
+    var r2=await fetch('data.bin?v='+meta.version); if(!r2.ok) throw new Error('App data could not be loaded.');
+    return new Uint8Array(await r2.arrayBuffer());
   }
   async function keyFromPassword(pw){
     var base=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveKey']);
@@ -346,7 +352,7 @@ button.go{width:100%;font:inherit;font-weight:600;padding:14px;border:0;border-r
   async function checkOffline(){
     var r={sw:false, files:false, pages:!!pages, n:pages?Object.keys(pages).length:0};
     try{ r.sw=!!(navigator.serviceWorker && navigator.serviceWorker.controller); }catch(e){}
-    try{ var c=await caches.open('prep-v2'); var a=await c.match('index.html'), b=await c.match('data.bin',{ignoreSearch:true}); r.files=!!(a&&b); }catch(e){}
+    try{ var c=await caches.open('prep-v2'); var a=await c.match('index.html'), b=await c.match('data.bin',{ignoreSearch:true}), v=await c.match('version.json',{ignoreSearch:true}); r.files=!!(a&&b&&(v||get('fn.meta'))); }catch(e){}
     r.ok=r.sw&&r.files&&r.pages; ready=r; stampChip(); return r;
   }
   // Home only, and only when something's wrong: "Offline?" chip where Back would be. When all is well, the status is in Contents on Home.

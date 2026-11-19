@@ -20,8 +20,10 @@ self.addEventListener('fetch', e => {
       const timer = setTimeout(() => ctrl.abort(), url.pathname.endsWith('/data.bin') ? 20000 : 5000);
       const res = await fetch(url.href, { signal: ctrl.signal, cache: 'no-store' });
       clearTimeout(timer);
-      if (res.ok) cache.put(key, res.clone());
-      return res;
+      if (res.ok) { e.waitUntil(cache.put(key, res.clone())); return res; }
+      // A server error must never replace the saved copy.
+      const saved = await cache.match(key, { ignoreSearch: true });
+      return saved || res;
     } catch (err) {
       const hit = await cache.match(key, { ignoreSearch: true });
       if (hit) return hit;
